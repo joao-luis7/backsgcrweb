@@ -1,0 +1,299 @@
+{
+  "info": {
+    "name": "SGCR - Task 04 - Clientes",
+    "description": "Roteiro de testes REST do módulo Cliente (/clientes).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080",
+      "type": "string"
+    },
+    {
+      "key": "clienteId",
+      "value": "1",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Cadastrar Cliente com Endereço (201)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status é 201 Created', function () {",
+              "    pm.response.to.have.status(201);",
+              "});",
+              "const json = pm.response.json();",
+              "pm.test('Retorna id, saldoDevedor = 0.0 e ativo = true', function () {",
+              "    pm.expect(json.id).to.be.a('number');",
+              "    pm.expect(json.saldoDevedor).to.eql(0);",
+              "    pm.expect(json.ativo).to.eql(true);",
+              "    pm.expect(json.endereco).to.be.an('object');",
+              "    pm.expect(json.endereco.id).to.be.a('number');",
+              "});",
+              "pm.collectionVariables.set('clienteId', json.id);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nome\": \"Maria Oliveira\",\n  \"telefone\": \"77999887766\",\n  \"endereco\": {\n    \"bairro\": \"Centro\",\n    \"rua\": \"Rua Rui Barbosa\",\n    \"numero\": \"120\",\n    \"pontoReferencia\": \"Próximo à praça\"\n  }\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/clientes/save",
+          "host": ["{{baseUrl}}"],
+          "path": ["clientes", "save"]
+        }
+      }
+    },
+    {
+      "name": "2. Cadastrar Cliente Inválido (400)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status é 400 Bad Request', function () {",
+              "    pm.response.to.have.status(400);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nome\": \"\",\n  \"telefone\": \"123\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/clientes/save",
+          "host": ["{{baseUrl}}"],
+          "path": ["clientes", "save"]
+        }
+      }
+    },
+    {
+      "name": "3. Listar Clientes Ativos (200)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status é 200 OK', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "const json = pm.response.json();",
+              "pm.test('Lista contém apenas clientes ativos', function () {",
+              "    pm.expect(json).to.be.an('array').that.is.not.empty;",
+              "    json.forEach(item => pm.expect(item.ativo).to.eql(true));",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/clientes/findall",
+          "host": ["{{baseUrl}}"],
+          "path": ["clientes", "findall"]
+        }
+      }
+    },
+    {
+      "name": "4a. Buscar Cliente por ID Existente (200)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status é 200 OK', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "const json = pm.response.json();",
+              "pm.test('ID corresponde ao solicitado', function () {",
+              "    pm.expect(json.id).to.eql(Number(pm.collectionVariables.get('clienteId')));",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/clientes/findbyid/{{clienteId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["clientes", "findbyid", "{{clienteId}}"]
+        }
+      }
+    },
+    {
+      "name": "4b. Buscar Cliente por ID Inexistente (404)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status é 404 Not Found', function () {",
+              "    pm.response.to.have.status(404);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/clientes/findbyid/9999",
+          "host": ["{{baseUrl}}"],
+          "path": ["clientes", "findbyid", "9999"]
+        }
+      }
+    },
+    {
+      "name": "5. Buscar Cliente por Nome (200)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status é 200 OK', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "const json = pm.response.json();",
+              "pm.test('Retorna lista filtrada por nome', function () {",
+              "    pm.expect(json).to.be.an('array').that.is.not.empty;",
+              "    pm.expect(json[0].nome.toLowerCase()).to.include('maria');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/clientes/findbynome?nome=maria",
+          "host": ["{{baseUrl}}"],
+          "path": ["clientes", "findbynome"],
+          "query": [
+            {
+              "key": "nome",
+              "value": "maria"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "6. Atualizar Cliente (200)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status é 200 OK', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "const json = pm.response.json();",
+              "pm.test('Dados atualizados e saldoDevedor preservado', function () {",
+              "    pm.expect(json.id).to.eql(Number(pm.collectionVariables.get('clienteId')));",
+              "    pm.expect(json.nome).to.eql('Maria Oliveira Santos');",
+              "    pm.expect(json.endereco.numero).to.eql('125');",
+              "    pm.expect(json.saldoDevedor).to.eql(0);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nome\": \"Maria Oliveira Santos\",\n  \"telefone\": \"77999887766\",\n  \"ativo\": true,\n  \"endereco\": {\n    \"bairro\": \"Centro\",\n    \"rua\": \"Rua Rui Barbosa\",\n    \"numero\": \"125\"\n  }\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/clientes/update/{{clienteId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["clientes", "update", "{{clienteId}}"]
+        }
+      }
+    },
+    {
+      "name": "7. Inativar Cliente (204)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status é 204 No Content', function () {",
+              "    pm.response.to.have.status(204);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/clientes/delete/{{clienteId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["clientes", "delete", "{{clienteId}}"]
+        }
+      }
+    }
+  ]
+}

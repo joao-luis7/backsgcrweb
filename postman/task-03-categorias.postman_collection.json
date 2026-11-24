@@ -1,0 +1,358 @@
+{
+  "info": {
+    "name": "SGCR - Task 03 - Categorias",
+    "description": "Roteiro de testes REST do módulo Categoria (/categorias).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080",
+      "type": "string"
+    },
+    {
+      "key": "categoriaId",
+      "value": "1",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Cadastrar Categoria (201)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status é 201 Created', function () {",
+              "    pm.response.to.have.status(201);",
+              "});",
+              "const json = pm.response.json();",
+              "pm.test('Retorna id e ativo = true', function () {",
+              "    pm.expect(json.id).to.be.a('number');",
+              "    pm.expect(json.ativo).to.eql(true);",
+              "    pm.expect(json.nome).to.eql('Bebidas');",
+              "});",
+              "pm.collectionVariables.set('categoriaId', json.id);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nome\": \"Bebidas\",\n  \"descricao\": \"Refrigerantes e sucos\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/categorias/save",
+          "host": ["{{baseUrl}}"],
+          "path": ["categorias", "save"]
+        }
+      }
+    },
+    {
+      "name": "2. Cadastrar Categoria Inválida - Sem Nome (400)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status é 400 Bad Request', function () {",
+              "    pm.response.to.have.status(400);",
+              "});",
+              "pm.test('Contém mensagem de validação do nome', function () {",
+              "    pm.expect(pm.response.text()).to.include('O nome da categoria é obrigatório.');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nome\": \"   \"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/categorias/save",
+          "host": ["{{baseUrl}}"],
+          "path": ["categorias", "save"]
+        }
+      }
+    },
+    {
+      "name": "3. Listar Todas as Categorias (200)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status é 200 OK', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "const json = pm.response.json();",
+              "pm.test('Retorna lista com id', function () {",
+              "    pm.expect(json).to.be.an('array').that.is.not.empty;",
+              "    pm.expect(json[0].id).to.be.a('number');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/categorias/findall",
+          "host": ["{{baseUrl}}"],
+          "path": ["categorias", "findall"]
+        }
+      }
+    },
+    {
+      "name": "4. Listar Categorias Ativas (200)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status é 200 OK', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "const json = pm.response.json();",
+              "pm.test('Todas as categorias retornadas estão ativas', function () {",
+              "    pm.expect(json).to.be.an('array');",
+              "    json.forEach(item => pm.expect(item.ativo).to.eql(true));",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/categorias/ativas",
+          "host": ["{{baseUrl}}"],
+          "path": ["categorias", "ativas"]
+        }
+      }
+    },
+    {
+      "name": "5a. Buscar Categoria por ID Existente (200)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status é 200 OK', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "const json = pm.response.json();",
+              "pm.test('ID corresponde ao solicitado', function () {",
+              "    pm.expect(json.id).to.eql(Number(pm.collectionVariables.get('categoriaId')));",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/categorias/findbyid/{{categoriaId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["categorias", "findbyid", "{{categoriaId}}"]
+        }
+      }
+    },
+    {
+      "name": "5b. Buscar Categoria por ID Inexistente (404)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status é 404 Not Found', function () {",
+              "    pm.response.to.have.status(404);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/categorias/findbyid/9999",
+          "host": ["{{baseUrl}}"],
+          "path": ["categorias", "findbyid", "9999"]
+        }
+      }
+    },
+    {
+      "name": "6a. Atualizar Categoria Existente (200)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status é 200 OK', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "const json = pm.response.json();",
+              "pm.test('Dados atualizados com mesmo id', function () {",
+              "    pm.expect(json.id).to.eql(Number(pm.collectionVariables.get('categoriaId')));",
+              "    pm.expect(json.nome).to.eql('Bebidas Geladas');",
+              "    pm.expect(json.descricao).to.eql('Gelados');",
+              "    pm.expect(json.ativo).to.eql(true);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nome\": \"Bebidas Geladas\",\n  \"descricao\": \"Gelados\",\n  \"ativo\": true\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/categorias/update/{{categoriaId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["categorias", "update", "{{categoriaId}}"]
+        }
+      }
+    },
+    {
+      "name": "6b. Atualizar Categoria Inexistente (404)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status é 404 Not Found', function () {",
+              "    pm.response.to.have.status(404);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nome\": \"Bebidas Geladas\",\n  \"descricao\": \"Gelados\",\n  \"ativo\": true\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/categorias/update/9999",
+          "host": ["{{baseUrl}}"],
+          "path": ["categorias", "update", "9999"]
+        }
+      }
+    },
+    {
+      "name": "7a. Inativar Categoria Existente (204)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status é 204 No Content', function () {",
+              "    pm.response.to.have.status(204);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/categorias/delete/{{categoriaId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["categorias", "delete", "{{categoriaId}}"]
+        }
+      }
+    },
+    {
+      "name": "7b. Inativar Categoria Inexistente (404)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status é 404 Not Found', function () {",
+              "    pm.response.to.have.status(404);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/categorias/delete/9999",
+          "host": ["{{baseUrl}}"],
+          "path": ["categorias", "delete", "9999"]
+        }
+      }
+    }
+  ]
+}

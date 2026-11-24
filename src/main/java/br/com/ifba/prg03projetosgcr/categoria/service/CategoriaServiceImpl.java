@@ -6,6 +6,7 @@ package br.com.ifba.prg03projetosgcr.categoria.service;
 
 import br.com.ifba.prg03projetosgcr.categoria.entity.Categoria;
 import br.com.ifba.prg03projetosgcr.categoria.repository.CategoriaRepository;
+import br.com.ifba.prg03projetosgcr.infrastructure.exception.RecursoNaoEncontradoException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -58,7 +59,7 @@ public class CategoriaServiceImpl implements CategoriaService{
         Categoria categoria = categoriaRepository.findById(id)
                 .orElseThrow(() -> {
                     log.warn("Falha na deleção: Categoria com ID {} não encontrada", id);
-                    return new IllegalArgumentException("Categoria não encontrada para o ID: " + id);
+                    return new RecursoNaoEncontradoException("Categoria não encontrada para o ID: " + id);
                 });
         
         // Soft delete: inativa a entidade via setter da própria Service
@@ -69,18 +70,21 @@ public class CategoriaServiceImpl implements CategoriaService{
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Optional<Categoria> findById(Long id) {
         log.debug("A procurar categoria pelo ID: {}", id);
         return categoriaRepository.findById(id);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<Categoria> findAll() {
         log.debug("A listar todas as categorias");
         return categoriaRepository.findAll();
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<Categoria> findAllAtivas() {
         log.debug("A listar todas as categorias ativas");
         return categoriaRepository.findByAtivoTrue(); 

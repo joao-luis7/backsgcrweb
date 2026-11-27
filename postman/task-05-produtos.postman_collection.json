@@ -1,0 +1,321 @@
+{
+  "info": {
+    "name": "SGCR - Task 05 - Produtos",
+    "description": "Roteiro de testes REST do módulo Produto (/produtos).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080",
+      "type": "string"
+    },
+    {
+      "key": "produtoId",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "categoriaId",
+      "value": "1",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Cadastrar Produto (201)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status é 201 Created', function () {",
+              "    pm.response.to.have.status(201);",
+              "});",
+              "const json = pm.response.json();",
+              "pm.test('Retorna ProdutoResponseDTO com id, categoriaId e categoriaNome', function () {",
+              "    pm.expect(json.id).to.be.a('number');",
+              "    pm.expect(json.nome).to.eql('Refrigerante Cola 2L');",
+              "    pm.expect(json.categoriaId).to.eql(1);",
+              "    pm.expect(json.categoriaNome).to.be.a('string');",
+              "});",
+              "pm.collectionVariables.set('produtoId', json.id);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nome\": \"Refrigerante Cola 2L\",\n  \"descricao\": \"Garrafa PET 2 Litros\",\n  \"precoUnidade\": 10.50,\n  \"precoCusto\": 6.00,\n  \"quantidadeEstoque\": 20,\n  \"categoriaId\": 1\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/produtos/save",
+          "host": ["{{baseUrl}}"],
+          "path": ["produtos", "save"]
+        }
+      }
+    },
+    {
+      "name": "2. Validação de Preço/Estoque (400)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status é 400 Bad Request', function () {",
+              "    pm.response.to.have.status(400);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nome\": \"Refrigerante Cola 2L\",\n  \"descricao\": \"Garrafa PET 2 Litros\",\n  \"precoUnidade\": 0,\n  \"precoCusto\": 6.00,\n  \"quantidadeEstoque\": -1,\n  \"categoriaId\": 1\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/produtos/save",
+          "host": ["{{baseUrl}}"],
+          "path": ["produtos", "save"]
+        }
+      }
+    },
+    {
+      "name": "3. Listar Todos (200)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status é 200 OK', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test('Retorna array de produtos', function () {",
+              "    pm.expect(pm.response.json()).to.be.an('array');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/produtos/findall",
+          "host": ["{{baseUrl}}"],
+          "path": ["produtos", "findall"]
+        }
+      }
+    },
+    {
+      "name": "4. Listar Ativos (200)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status é 200 OK', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test('Todos os produtos retornados estão ativos', function () {",
+              "    const list = pm.response.json();",
+              "    pm.expect(list).to.be.an('array');",
+              "    list.forEach(p => pm.expect(p.ativo).to.eql(true));",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/produtos/ativos",
+          "host": ["{{baseUrl}}"],
+          "path": ["produtos", "ativos"]
+        }
+      }
+    },
+    {
+      "name": "5. Listar Ativos com Categoria (200)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status é 200 OK', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test('Retorna array de produtos ativos', function () {",
+              "    pm.expect(pm.response.json()).to.be.an('array');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/produtos/ativos-com-categoria",
+          "host": ["{{baseUrl}}"],
+          "path": ["produtos", "ativos-com-categoria"]
+        }
+      }
+    },
+    {
+      "name": "6. Buscar por ID (200)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status é 200 OK ou 404 Not Found', function () {",
+              "    pm.expect([200, 404]).to.include(pm.response.code);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/produtos/findbyid/{{produtoId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["produtos", "findbyid", "{{produtoId}}"]
+        }
+      }
+    },
+    {
+      "name": "7. Buscar por Nome (200)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status é 200 OK', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test('Retorna array de produtos', function () {",
+              "    pm.expect(pm.response.json()).to.be.an('array');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/produtos/findbynome?nome=cola",
+          "host": ["{{baseUrl}}"],
+          "path": ["produtos", "findbynome"],
+          "query": [
+            {
+              "key": "nome",
+              "value": "cola"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "8. Atualizar Produto (200)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status é 200 OK ou 404 Not Found', function () {",
+              "    pm.expect([200, 404]).to.include(pm.response.code);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nome\": \"Refrigerante Cola 2L\",\n  \"descricao\": \"Garrafa PET 2L\",\n  \"precoUnidade\": 11.00,\n  \"precoCusto\": 6.50,\n  \"quantidadeEstoque\": 15,\n  \"ativo\": true,\n  \"categoriaId\": 1\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/produtos/update/{{produtoId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["produtos", "update", "{{produtoId}}"]
+        }
+      }
+    },
+    {
+      "name": "9. Inativar Produto (204)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status é 204 No Content', function () {",
+              "    pm.response.to.have.status(204);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/produtos/delete/{{produtoId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["produtos", "delete", "{{produtoId}}"]
+        }
+      }
+    }
+  ]
+}

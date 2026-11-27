@@ -30,7 +30,7 @@ public interface PagamentoRepository extends JpaRepository<Pagamento, Long>{
     //Metodo padrão para casos de uso que exigem o Pagamento detalhado com os dados do Cliente
     @EntityGraph(attributePaths = "cliente")
     @Query("SELECT p FROM Pagamento p WHERE p.id = :id")
-    Optional<Pagamento> findByIdComCliente(Long id);
+    Optional<Pagamento> findByIdComCliente(@Param("id") Long id);
     
     // Faz a soma direto no banco de dados para máxima performance
     @Query("SELECT SUM(p.valorTotal) FROM Pagamento p WHERE p.dataHora >= :dataLimite")

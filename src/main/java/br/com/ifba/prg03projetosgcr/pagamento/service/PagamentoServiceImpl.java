@@ -8,6 +8,7 @@ import br.com.ifba.prg03projetosgcr.pagamento.entity.Pagamento;
 import br.com.ifba.prg03projetosgcr.pagamento.repository.PagamentoRepository;
 import br.com.ifba.prg03projetosgcr.cliente.entity.Cliente;
 import br.com.ifba.prg03projetosgcr.cliente.service.ClienteService;
+import br.com.ifba.prg03projetosgcr.infrastructure.exception.RecursoNaoEncontradoException;
 import br.com.ifba.prg03projetosgcr.pagamento.entity.FormaPagamento;
 import java.util.List;
 
@@ -50,6 +51,7 @@ public class PagamentoServiceImpl implements PagamentoService{
 
         // busca o cliente novo direto do banco de dados
         Cliente clienteNoBanco = clienteService.findById(pagamento.getCliente().getId());
+        pagamento.setCliente(clienteNoBanco);
         double saldoAtual = clienteNoBanco.getSaldoDevedor();
         
         //O cliente já está quite?
@@ -89,8 +91,8 @@ public class PagamentoServiceImpl implements PagamentoService{
 
     @Override
     public Pagamento findById(Long id) {
-        return pagamentoRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Recibo de pagamento não encontrado com o ID: " + id));
+        return pagamentoRepository.findByIdComCliente(id)
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Recibo de pagamento não encontrado com o ID: " + id));
     }
 
     @Override
@@ -128,6 +130,9 @@ public class PagamentoServiceImpl implements PagamentoService{
     @Override
     @Transactional
     public Pagamento update(Pagamento pagamentoAtualizado) {
+        if (pagamentoAtualizado.getId() == null) {
+            throw new IllegalArgumentException("O ID do pagamento é obrigatório para atualização.");
+        }
         log.info("Atualizando pagamento ID: {}", pagamentoAtualizado.getId());
         
         // Busca como o pagamento estava ANTES de ser alterado
@@ -143,11 +148,15 @@ public class PagamentoServiceImpl implements PagamentoService{
             clienteService.update(clienteAntigo);
             log.debug("Valores originais restaurados no saldo do cliente (ID: {}) antes de aplicar atualização.", clienteAntigo.getId());
         }
+
+        Long clienteId = pagamentoAtualizado.getCliente() != null && pagamentoAtualizado.getCliente().getId() != null
+                ? pagamentoAtualizado.getCliente().getId()
+                : pagamentoAntigo.getCliente().getId();
+        Cliente clienteNovo = clienteService.findById(clienteId);
+        pagamentoAtualizado.setCliente(clienteNovo);
         
         // APLICA O NOVO PAGAMENTO (apenas se a nova forma não for FIADO)
         if(pagamentoAtualizado.getFormaPagamento() != FormaPagamento.FIADO){
-            Cliente clienteNovo = clienteService.findById(pagamentoAtualizado.getCliente().getId());
-            
             //valida pra nao abater mais do que o cliente deve 
             if(pagamentoAtualizado.getValorTotal() > clienteNovo.getSaldoDevedor()){
                 log.warn("Atualização recusada. O valor excede o saldo devedor do cliente.");

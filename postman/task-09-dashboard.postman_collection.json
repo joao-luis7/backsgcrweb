@@ -1,0 +1,165 @@
+{
+  "info": {
+    "name": "SGCR - Task 09 - Dashboard",
+    "description": "Roteiro de testes REST do módulo Dashboard (/dashboard).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Faturamento do Dia (200)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status é 200 OK', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test('Contém faturamentoDoDia', function () {",
+              "    pm.expect(pm.response.json()).to.have.property('faturamentoDoDia');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/dashboard/faturamento-dia",
+          "host": ["{{baseUrl}}"],
+          "path": ["dashboard", "faturamento-dia"]
+        }
+      }
+    },
+    {
+      "name": "2. Total de Vendas do Dia (200)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status é 200 OK', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test('Contém totalVendasDoDia', function () {",
+              "    pm.expect(pm.response.json()).to.have.property('totalVendasDoDia');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/dashboard/vendas-dia",
+          "host": ["{{baseUrl}}"],
+          "path": ["dashboard", "vendas-dia"]
+        }
+      }
+    },
+    {
+      "name": "3. Produtos com Estoque Crítico (200)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status é 200 OK', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test('Retorna array de produtos ativos com quantidadeEstoque <= 5', function () {",
+              "    const list = pm.response.json();",
+              "    pm.expect(list).to.be.an('array');",
+              "    list.forEach(p => {",
+              "        pm.expect(p.ativo).to.eql(true);",
+              "        pm.expect(p.quantidadeEstoque).to.be.at.most(5);",
+              "    });",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/dashboard/estoque-baixo",
+          "host": ["{{baseUrl}}"],
+          "path": ["dashboard", "estoque-baixo"]
+        }
+      }
+    },
+    {
+      "name": "4. Total de Clientes Ativos Identificados (200)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status é 200 OK', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test('Contém totalClientesAtivos', function () {",
+              "    pm.expect(pm.response.json()).to.have.property('totalClientesAtivos');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/dashboard/clientes-ativos",
+          "host": ["{{baseUrl}}"],
+          "path": ["dashboard", "clientes-ativos"]
+        }
+      }
+    },
+    {
+      "name": "5. Resumo Consolidado (200)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status é 200 OK', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "const json = pm.response.json();",
+              "pm.test('Retorna DashboardResumoResponseDTO completo', function () {",
+              "    pm.expect(json).to.have.property('faturamentoDoDia');",
+              "    pm.expect(json).to.have.property('totalVendasDoDia');",
+              "    pm.expect(json).to.have.property('totalClientesAtivos');",
+              "    pm.expect(json.produtosComEstoqueBaixo).to.be.an('array');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/dashboard/resumo",
+          "host": ["{{baseUrl}}"],
+          "path": ["dashboard", "resumo"]
+        }
+      }
+    }
+  ]
+}

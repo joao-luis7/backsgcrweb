@@ -1,0 +1,227 @@
+{
+  "info": {
+    "name": "SGCR - Task 06 - Funcionarios",
+    "description": "Roteiro de testes REST do módulo Funcionario (/funcionarios).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Autenticar com Admin Padrão (200)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status é 200 OK', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "const json = pm.response.json();",
+              "pm.test('Retorna FuncionarioResponseDTO sem campo senha', function () {",
+              "    pm.expect(json.id).to.be.a('number');",
+              "    pm.expect(json.username).to.eql('admin');",
+              "    pm.expect(json).to.not.have.property('senha');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"admin\",\n  \"senha\": \"1234\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/funcionarios/autenticar",
+          "host": ["{{baseUrl}}"],
+          "path": ["funcionarios", "autenticar"]
+        }
+      }
+    },
+    {
+      "name": "2. Falha de Login com Senha Incorreta (401)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status é 401 Unauthorized', function () {",
+              "    pm.response.to.have.status(401);",
+              "});",
+              "pm.test('Contém mensagem de credenciais inválidas', function () {",
+              "    pm.expect(pm.response.text()).to.include('Credenciais inválidas. Verifique o usuário e a senha.');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"admin\",\n  \"senha\": \"errada\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/funcionarios/autenticar",
+          "host": ["{{baseUrl}}"],
+          "path": ["funcionarios", "autenticar"]
+        }
+      }
+    },
+    {
+      "name": "3. Cadastrar Novo Funcionário (201)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status é 201 Created', function () {",
+              "    pm.response.to.have.status(201);",
+              "});",
+              "const json = pm.response.json();",
+              "pm.test('Retorna FuncionarioResponseDTO sem senha', function () {",
+              "    pm.expect(json.id).to.be.a('number');",
+              "    pm.expect(json.username).to.eql('carlos.caixa');",
+              "    pm.expect(json.perfil).to.eql('CAIXA');",
+              "    pm.expect(json).to.not.have.property('senha');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nome\": \"Carlos Caixa\",\n  \"username\": \"carlos.caixa\",\n  \"senha\": \"1234\",\n  \"perfil\": \"CAIXA\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/funcionarios/save",
+          "host": ["{{baseUrl}}"],
+          "path": ["funcionarios", "save"]
+        }
+      }
+    },
+    {
+      "name": "4a. Erro de Username Duplicado (400)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status é 400 Bad Request', function () {",
+              "    pm.response.to.have.status(400);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nome\": \"Carlos Caixa 2\",\n  \"username\": \"carlos.caixa\",\n  \"senha\": \"1234\",\n  \"perfil\": \"CAIXA\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/funcionarios/save",
+          "host": ["{{baseUrl}}"],
+          "path": ["funcionarios", "save"]
+        }
+      }
+    },
+    {
+      "name": "4b. Erro de Perfil Nulo (400)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status é 400 Bad Request', function () {",
+              "    pm.response.to.have.status(400);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nome\": \"Sem Perfil\",\n  \"username\": \"sem.perfil\",\n  \"senha\": \"1234\",\n  \"perfil\": null\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/funcionarios/save",
+          "host": ["{{baseUrl}}"],
+          "path": ["funcionarios", "save"]
+        }
+      }
+    }
+  ]
+}

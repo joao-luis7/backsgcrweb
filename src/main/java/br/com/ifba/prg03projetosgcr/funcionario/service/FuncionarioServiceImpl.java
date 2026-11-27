@@ -88,6 +88,12 @@ public class FuncionarioServiceImpl implements FuncionarioService{
         log.info("Salvando novo funcionário: {}", funcionario.getUsername());
         
         validarFuncionario(funcionario);
+
+        if (funcionario.getId() == null
+                && funcionarioRepository.findByUsername(funcionario.getUsername()).isPresent()) {
+            log.warn("Tentativa de cadastro com username já existente: {}", funcionario.getUsername());
+            throw new RegraNegocioException("Já existe um funcionário cadastrado com este username.");
+        }
         
         funcionarioRepository.save(funcionario);
         

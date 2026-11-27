@@ -13,6 +13,7 @@ import br.com.ifba.prg03projetosgcr.venda.entity.ItemVenda;
 import br.com.ifba.prg03projetosgcr.venda.entity.enums.StatusVenda;
 import br.com.ifba.prg03projetosgcr.venda.entity.Venda;
 import br.com.ifba.prg03projetosgcr.venda.repository.VendaRepository;
+import br.com.ifba.prg03projetosgcr.infrastructure.exception.RecursoNaoEncontradoException;
 import br.com.ifba.prg03projetosgcr.infrastructure.exception.RegraNegocioException;
 import br.com.ifba.prg03projetosgcr.util.ValidatorUtil;
 import java.time.LocalDate;
@@ -42,73 +43,83 @@ public class VendaServiceImpl implements VendaService{
     @Transactional(rollbackFor = Exception.class)
     public Venda realizarVenda(Venda venda) {
         log.info("Iniciando o processamento de uma nova venda.");
-       
+
+        validatorUtil.validateNotNull(venda.getFormaPagamento(), "A forma de pagamento é obrigatória.");
         validatorUtil.validateListaNotEmpty(venda.getItens(), "O carrinho está vazio, adicione produtos antes de finalizar");
-        
-        //LOGICA AUTOMATICA: CLIENTE NÃO IDENTIFICADO
-        if (venda.getCliente() == null) {
+
+        if (venda.getCliente() != null && venda.getCliente().getId() != null) {
+            Cliente clienteNoBanco = clienteService.findById(venda.getCliente().getId());
+            venda.setCliente(clienteNoBanco);
+        }
+
+        if (venda.getFormaPagamento() == FormaPagamento.FIADO) {
+            if (venda.getCliente() == null
+                    || venda.getCliente().getId() == null
+                    || "Não Identificado".equalsIgnoreCase(venda.getCliente().getNome())) {
+                log.warn("Venda FIADO recusada: cliente não identificado.");
+                throw new RegraNegocioException("Vendas na modalidade FIADO exigem um cliente cadastrado e identificado.");
+            }
+        } else if (venda.getCliente() == null) {
             log.debug("Venda sem cliente. Vinculando 'Não Identificado'...");
-            
-            // Busca se o cliente invisível já existe no banco
+
             List<Cliente> clientesPadrao = clienteService.findByNome("Não Identificado");
             Cliente clientePadrao;
-            
+
             if (clientesPadrao.isEmpty()) {
-                // Se não existir, o sistema cria ele sozinho silenciosamente
                 clientePadrao = new Cliente();
                 clientePadrao.setNome("Não Identificado");
                 clientePadrao.setTelefone("00000000000");
                 clientePadrao.setAtivo(true);
-                
+
                 clientePadrao = clienteService.save(clientePadrao);
                 log.info("Cliente 'Não Identificado' criado no banco de dados automaticamente.");
             } else {
                 clientePadrao = clientesPadrao.get(0);
             }
-            
-            // Vincula à venda atual
+
             venda.setCliente(clientePadrao);
         }
-        
+
         double totalVenda = 0.0;
-        
-        //Processa cada item do carrinho
-        for(ItemVenda item : venda.getItens()){
-            totalVenda += item.getSubtotal();
-            
-            log.debug("Processando item. Verificando estoque do produto ID: {}", item.getProduto().getId()); 
+
+        for (ItemVenda item : venda.getItens()) {
+            validatorUtil.validateValorMaiorQueZero(item.getQuantidade(), "quantidade do item");
+
+            log.debug("Processando item. Verificando estoque do produto ID: {}", item.getProduto().getId());
             Produto p = produtoService.findById(item.getProduto().getId());
-            if(p.getQuantidadeEstoque() < item.getQuantidade()){
-                log.warn("Operação abortada por regra de negócio: Estoque insuficiente para o produto '{}'. Disponível: {}, Solicitado: {}", 
-                        p.getNome(), p.getQuantidadeEstoque(), item.getQuantidade()); 
+            if (p.getQuantidadeEstoque() < item.getQuantidade()) {
+                log.warn("Operação abortada por regra de negócio: Estoque insuficiente para o produto '{}'. Disponível: {}, Solicitado: {}",
+                        p.getNome(), p.getQuantidadeEstoque(), item.getQuantidade());
                 throw new RegraNegocioException("Estoque insuficiente para o produto: " + p.getNome());
             }
-            
+
+            item.setProduto(p);
+            item.setVenda(venda);
+            item.setPrecoUnitario(p.getPrecoUnidade());
+            item.setSubtotal(p.getPrecoUnidade() * item.getQuantidade());
+            totalVenda += item.getSubtotal();
+
             int estoqueAnterior = p.getQuantidadeEstoque();
             p.setQuantidadeEstoque(estoqueAnterior - item.getQuantidade());
-            log.debug("Abatendo estoque de '{}'. Estoque anterior: {}, Novo estoque: {}", p.getNome(), estoqueAnterior, p.getQuantidadeEstoque()); 
-            produtoService.update(p); 
+            log.debug("Abatendo estoque de '{}'. Estoque anterior: {}, Novo estoque: {}", p.getNome(), estoqueAnterior, p.getQuantidadeEstoque());
+            produtoService.update(p);
         }
-        
-        //preenche os dados finais da transação
+
         venda.setValorTotal(totalVenda);
         venda.setDataHora(LocalDateTime.now());
         venda.setStatusVenda(StatusVenda.FINALIZADA);
-        
-       //Se for FIADO, atualiza a divida do cliente
-       if(venda.getFormaPagamento() == FormaPagamento.FIADO){
-           validatorUtil.validateListaNotEmpty(venda.getItens(), "O carrinho está vazio, adicione produtos antes de finalizar");
-           
-           log.debug("Venda configurada como FIADO. Ajustando limite e dívida do cliente ID: {}", venda.getCliente().getId()); 
-           Cliente cliente = clienteService.findById(venda.getCliente().getId());
-           double saldoAnterior = cliente.getSaldoDevedor();
-           cliente.setSaldoDevedor(cliente.getSaldoDevedor() + totalVenda);
-           log.debug("Saldo devedor do cliente ID {} modificado. Antigo: R$ {}, Novo: R$ {}", cliente.getId(), saldoAnterior, cliente.getSaldoDevedor());
-           clienteService.update(cliente);
-       }
-       log.info("Venda processada com sucesso. Salvando no banco de dados. Total: R$ {}", totalVenda);
-       //salva a venda e todos os itens
-       return vendaRepository.save(venda);
+
+        if (venda.getFormaPagamento() == FormaPagamento.FIADO) {
+            log.debug("Venda configurada como FIADO. Ajustando limite e dívida do cliente ID: {}", venda.getCliente().getId());
+            Cliente cliente = clienteService.findById(venda.getCliente().getId());
+            double saldoAnterior = cliente.getSaldoDevedor();
+            cliente.setSaldoDevedor(cliente.getSaldoDevedor() + totalVenda);
+            log.debug("Saldo devedor do cliente ID {} modificado. Antigo: R$ {}, Novo: R$ {}", cliente.getId(), saldoAnterior, cliente.getSaldoDevedor());
+            clienteService.update(cliente);
+        }
+
+        log.info("Venda processada com sucesso. Salvando no banco de dados. Total: R$ {}", totalVenda);
+        return vendaRepository.save(venda);
     }
     
     @Override
@@ -121,11 +132,11 @@ public class VendaServiceImpl implements VendaService{
     @Transactional // Garante que, se der erro no meio, o banco desfaz tudo (Rollback)
     public void cancelarVenda(Long id){
         log.info("Iniciando requisição de cancelamento para a venda ID: {}", id); 
-        //Busca a venda no banco
-        Venda venda = vendaRepository.findById(id)
+        //Busca a venda no banco com cliente, itens e produtos carregados
+        Venda venda = vendaRepository.findByIdComItens(id)
                 .orElseThrow(() -> {
                     log.warn("Cancelamento cancelado: Venda ID {} inexistente no sistema.", id); 
-                    return new IllegalArgumentException("Venda não encontrada no sistema.");
+                    return new RecursoNaoEncontradoException("Venda não encontrada no sistema.");
                         });
 
         //Proteção: Verifica se já foi cancelada antes
@@ -175,7 +186,7 @@ public class VendaServiceImpl implements VendaService{
         return vendaRepository.findByIdComItens(id)
                 .orElseThrow(() -> {
                     log.warn("Busca com itens mal-sucedida: Venda ID {} não existe.", id);
-                    return new IllegalArgumentException("Venda não encontrada!");
+                    return new RecursoNaoEncontradoException("Venda não encontrada!");
                 });
     }
     

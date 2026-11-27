@@ -1,0 +1,268 @@
+{
+  "info": {
+    "name": "SGCR - Task 07 - Vendas",
+    "description": "Roteiro de testes REST do módulo Venda (/vendas).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080",
+      "type": "string"
+    },
+    {
+      "key": "vendaId",
+      "value": "1",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Venda à Vista Sem Cliente (201)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status é 201 Created', function () {",
+              "    pm.response.to.have.status(201);",
+              "});",
+              "const json = pm.response.json();",
+              "pm.test('Vincula Não Identificado e calcula valores', function () {",
+              "    pm.expect(json.id).to.be.a('number');",
+              "    pm.expect(json.clienteNome).to.eql('Não Identificado');",
+              "    pm.expect(json.valorTotal).to.be.a('number');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"clienteId\": null,\n  \"formaPagamento\": \"PIX\",\n  \"itens\": [\n    { \"produtoId\": 1, \"quantidade\": 2 }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/vendas/save",
+          "host": ["{{baseUrl}}"],
+          "path": ["vendas", "save"]
+        }
+      }
+    },
+    {
+      "name": "2. Venda FIADO com Cliente (201)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status é 201 Created', function () {",
+              "    pm.response.to.have.status(201);",
+              "});",
+              "const json = pm.response.json();",
+              "pm.test('Registra venda FIADO com cliente', function () {",
+              "    pm.expect(json.id).to.be.a('number');",
+              "    pm.expect(json.clienteId).to.eql(1);",
+              "    pm.expect(json.formaPagamento).to.eql('FIADO');",
+              "});",
+              "pm.collectionVariables.set('vendaId', json.id);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"clienteId\": 1,\n  \"formaPagamento\": \"FIADO\",\n  \"itens\": [\n    { \"produtoId\": 1, \"quantidade\": 1 }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/vendas/save",
+          "host": ["{{baseUrl}}"],
+          "path": ["vendas", "save"]
+        }
+      }
+    },
+    {
+      "name": "3. Erro FIADO Sem Cliente (400)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status é 400 Bad Request', function () {",
+              "    pm.response.to.have.status(400);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"clienteId\": null,\n  \"formaPagamento\": \"FIADO\",\n  \"itens\": [\n    { \"produtoId\": 1, \"quantidade\": 1 }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/vendas/save",
+          "host": ["{{baseUrl}}"],
+          "path": ["vendas", "save"]
+        }
+      }
+    },
+    {
+      "name": "4. Erro de Estoque Insuficiente (400)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status é 400 Bad Request', function () {",
+              "    pm.response.to.have.status(400);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"clienteId\": null,\n  \"formaPagamento\": \"PIX\",\n  \"itens\": [\n    { \"produtoId\": 1, \"quantidade\": 99999 }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/vendas/save",
+          "host": ["{{baseUrl}}"],
+          "path": ["vendas", "save"]
+        }
+      }
+    },
+    {
+      "name": "5. Listar Vendas (200)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status é 200 OK', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test('Retorna array de vendas', function () {",
+              "    pm.expect(pm.response.json()).to.be.an('array');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/vendas/findall",
+          "host": ["{{baseUrl}}"],
+          "path": ["vendas", "findall"]
+        }
+      }
+    },
+    {
+      "name": "6. Buscar Venda por ID (200)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status é 200 OK ou 404 Not Found', function () {",
+              "    pm.expect([200, 404]).to.include(pm.response.code);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/vendas/findbyid/{{vendaId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["vendas", "findbyid", "{{vendaId}}"]
+        }
+      }
+    },
+    {
+      "name": "7. Cancelar Venda (204)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status é 204 No Content', function () {",
+              "    pm.response.to.have.status(204);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PATCH",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/vendas/cancelar/{{vendaId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["vendas", "cancelar", "{{vendaId}}"]
+        }
+      }
+    }
+  ]
+}

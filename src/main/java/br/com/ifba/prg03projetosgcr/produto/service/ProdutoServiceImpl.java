@@ -4,6 +4,7 @@
  */
 package br.com.ifba.prg03projetosgcr.produto.service;
 
+import br.com.ifba.prg03projetosgcr.infrastructure.exception.RecursoNaoEncontradoException;
 import br.com.ifba.prg03projetosgcr.produto.entity.Produto;
 import br.com.ifba.prg03projetosgcr.produto.repository.ProdutoRepository;
 import br.com.ifba.prg03projetosgcr.util.ValidatorUtil;
@@ -67,7 +68,7 @@ public class ProdutoServiceImpl implements ProdutoService{
     @Override
     public Produto findById(Long id) {
         return produtoRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Produto não encontrado com o ID: " + id));
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Produto não encontrado com o ID: " + id));
     }
 
     @Override

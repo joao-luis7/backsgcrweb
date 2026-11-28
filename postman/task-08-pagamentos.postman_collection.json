@@ -11,19 +11,29 @@
       "type": "string"
     },
     {
-      "key": "pagamentoId",
+      "key": "clientePagId",
       "value": "1",
       "type": "string"
     },
     {
-      "key": "clienteId",
+      "key": "produtoPagId",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "vendaPagId",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "pagamentoId",
       "value": "1",
       "type": "string"
     }
   ],
   "item": [
     {
-      "name": "1. Registrar Pagamento (201)",
+      "name": "0a. Setup — Criar Cliente para Pagamento (201)",
       "event": [
         {
           "listen": "test",
@@ -34,10 +44,143 @@
               "    pm.response.to.have.status(201);",
               "});",
               "const json = pm.response.json();",
-              "pm.test('Retorna PagamentoResponseDTO com clienteSaldoDevedorAtual', function () {",
+              "pm.test('Cliente criado com id', function () {",
               "    pm.expect(json.id).to.be.a('number');",
-              "    pm.expect(json.clienteId).to.eql(1);",
-              "    pm.expect(json.clienteSaldoDevedorAtual).to.be.a('number');",
+              "});",
+              "pm.collectionVariables.set('clientePagId', json.id);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nome\": \"Cliente Teste Pagamento\",\n  \"telefone\": \"77998877665\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/clientes/save",
+          "host": ["{{baseUrl}}"],
+          "path": ["clientes", "save"]
+        }
+      }
+    },
+    {
+      "name": "0b. Setup — Criar Produto para Venda FIADO (201)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status é 201 Created', function () {",
+              "    pm.response.to.have.status(201);",
+              "});",
+              "const json = pm.response.json();",
+              "pm.test('Produto criado com id', function () {",
+              "    pm.expect(json.id).to.be.a('number');",
+              "});",
+              "pm.collectionVariables.set('produtoPagId', json.id);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nome\": \"Produto Teste Pagamento\",\n  \"descricao\": \"Item para gerar saldo devedor\",\n  \"precoUnidade\": 50.00,\n  \"precoCusto\": 25.00,\n  \"quantidadeEstoque\": 10\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/produtos/save",
+          "host": ["{{baseUrl}}"],
+          "path": ["produtos", "save"]
+        }
+      }
+    },
+    {
+      "name": "0c. Setup — Criar Venda FIADO de R$ 100,00 (201)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status é 201 Created', function () {",
+              "    pm.response.to.have.status(201);",
+              "});",
+              "const json = pm.response.json();",
+              "pm.test('Venda FIADO criada no valor de 100', function () {",
+              "    pm.expect(json.id).to.be.a('number');",
+              "    pm.expect(json.valorTotal).to.eql(100);",
+              "});",
+              "pm.collectionVariables.set('vendaPagId', json.id);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"clienteId\": {{clientePagId}},\n  \"formaPagamento\": \"FIADO\",\n  \"itens\": [\n    {\n      \"produtoId\": {{produtoPagId}},\n      \"quantidade\": 2\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/vendas/save",
+          "host": ["{{baseUrl}}"],
+          "path": ["vendas", "save"]
+        }
+      }
+    },
+    {
+      "name": "1. Registrar Pagamento Parcial de R$ 30,00 (201)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status é 201 Created', function () {",
+              "    pm.response.to.have.status(201);",
+              "});",
+              "const json = pm.response.json();",
+              "pm.test('Pagamento registrado e saldo reduzido para 70', function () {",
+              "    pm.expect(json.id).to.be.a('number');",
+              "    pm.expect(json.clienteId).to.eql(Number(pm.collectionVariables.get('clientePagId')));",
+              "    pm.expect(json.clienteSaldoDevedorAtual).to.eql(70);",
               "});",
               "pm.collectionVariables.set('pagamentoId', json.id);"
             ]
@@ -54,7 +197,7 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"clienteId\": 1,\n  \"valorTotal\": 5.00,\n  \"formaPagamento\": \"PIX\"\n}",
+          "raw": "{\n  \"clienteId\": {{clientePagId}},\n  \"valorTotal\": 30.00,\n  \"formaPagamento\": \"PIX\"\n}",
           "options": {
             "raw": {
               "language": "json"
@@ -93,7 +236,7 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"clienteId\": 1,\n  \"valorTotal\": 999999.00,\n  \"formaPagamento\": \"PIX\"\n}",
+          "raw": "{\n  \"clienteId\": {{clientePagId}},\n  \"valorTotal\": 999999.00,\n  \"formaPagamento\": \"PIX\"\n}",
           "options": {
             "raw": {
               "language": "json"
@@ -118,8 +261,8 @@
               "pm.test('Status é 200 OK', function () {",
               "    pm.response.to.have.status(200);",
               "});",
-              "pm.test('Retorna array de pagamentos', function () {",
-              "    pm.expect(pm.response.json()).to.be.an('array');",
+              "pm.test('Retorna array não vazio de pagamentos', function () {",
+              "    pm.expect(pm.response.json()).to.be.an('array').that.is.not.empty;",
               "});"
             ]
           }
@@ -136,15 +279,20 @@
       }
     },
     {
-      "name": "4. Buscar Pagamento por ID (200)",
+      "name": "4a. Buscar Pagamento por ID Existente (200)",
       "event": [
         {
           "listen": "test",
           "script": {
             "type": "text/javascript",
             "exec": [
-              "pm.test('Status é 200 OK ou 404 Not Found', function () {",
-              "    pm.expect([200, 404]).to.include(pm.response.code);",
+              "pm.test('Status é 200 OK', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "const json = pm.response.json();",
+              "pm.test('Retorna pagamento esperado', function () {",
+              "    pm.expect(json.id).to.eql(Number(pm.collectionVariables.get('pagamentoId')));",
+              "    pm.expect(json.valorTotal).to.eql(30);",
               "});"
             ]
           }
@@ -161,6 +309,34 @@
       }
     },
     {
+      "name": "4b. Buscar Pagamento por ID Inexistente (404)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status é 404 Not Found', function () {",
+              "    pm.response.to.have.status(404);",
+              "});",
+              "pm.test('ErrorResponse com status 404', function () {",
+              "    pm.expect(pm.response.json().status).to.eql(404);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/pagamentos/findbyid/999999",
+          "host": ["{{baseUrl}}"],
+          "path": ["pagamentos", "findbyid", "999999"]
+        }
+      }
+    },
+    {
       "name": "5. Listar Pagamentos por Cliente (200)",
       "event": [
         {
@@ -171,8 +347,11 @@
               "pm.test('Status é 200 OK', function () {",
               "    pm.response.to.have.status(200);",
               "});",
-              "pm.test('Retorna array de pagamentos do cliente', function () {",
-              "    pm.expect(pm.response.json()).to.be.an('array');",
+              "const list = pm.response.json();",
+              "const expectedId = Number(pm.collectionVariables.get('pagamentoId'));",
+              "pm.test('Contém o pagamento registrado para o cliente', function () {",
+              "    pm.expect(list).to.be.an('array').that.is.not.empty;",
+              "    pm.expect(list.some(p => p.id === expectedId)).to.eql(true);",
               "});"
             ]
           }
@@ -182,9 +361,9 @@
         "method": "GET",
         "header": [],
         "url": {
-          "raw": "{{baseUrl}}/pagamentos/cliente/{{clienteId}}",
+          "raw": "{{baseUrl}}/pagamentos/cliente/{{clientePagId}}",
           "host": ["{{baseUrl}}"],
-          "path": ["pagamentos", "cliente", "{{clienteId}}"]
+          "path": ["pagamentos", "cliente", "{{clientePagId}}"]
         }
       }
     },
@@ -199,8 +378,8 @@
               "pm.test('Status é 200 OK', function () {",
               "    pm.response.to.have.status(200);",
               "});",
-              "pm.test('Contém faturamentoUltimos30Dias', function () {",
-              "    pm.expect(pm.response.json()).to.have.property('faturamentoUltimos30Dias');",
+              "pm.test('Retorna faturamentoUltimos30Dias numérico', function () {",
+              "    pm.expect(pm.response.json().faturamentoUltimos30Dias).to.be.a('number');",
               "});"
             ]
           }
@@ -217,15 +396,22 @@
       }
     },
     {
-      "name": "7. Atualizar Recibo (200)",
+      "name": "7a. Atualizar Recibo de Pagamento para R$ 40,00 (200)",
       "event": [
         {
           "listen": "test",
           "script": {
             "type": "text/javascript",
             "exec": [
-              "pm.test('Status é 200 OK ou 404 Not Found', function () {",
-              "    pm.expect([200, 404]).to.include(pm.response.code);",
+              "pm.test('Status é 200 OK', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "const json = pm.response.json();",
+              "pm.test('Atualiza recibo e recalcula saldo devedor para 60', function () {",
+              "    pm.expect(json.id).to.eql(Number(pm.collectionVariables.get('pagamentoId')));",
+              "    pm.expect(json.valorTotal).to.eql(40);",
+              "    pm.expect(json.formaPagamento).to.eql('DINHEIRO');",
+              "    pm.expect(json.clienteSaldoDevedorAtual).to.eql(60);",
               "});"
             ]
           }
@@ -241,7 +427,7 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"clienteId\": 1,\n  \"valorTotal\": 6.00,\n  \"formaPagamento\": \"DINHEIRO\"\n}",
+          "raw": "{\n  \"clienteId\": {{clientePagId}},\n  \"valorTotal\": 40.00,\n  \"formaPagamento\": \"DINHEIRO\"\n}",
           "options": {
             "raw": {
               "language": "json"
@@ -256,7 +442,88 @@
       }
     },
     {
-      "name": "8. Excluir/Estornar Pagamento (204)",
+      "name": "7b. Erro ao Atualizar Pagamento com Valor Inválido (400)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status é 400 Bad Request', function () {",
+              "    pm.response.to.have.status(400);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"clienteId\": {{clientePagId}},\n  \"valorTotal\": -10.00,\n  \"formaPagamento\": \"DINHEIRO\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/pagamentos/update/{{pagamentoId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["pagamentos", "update", "{{pagamentoId}}"]
+        }
+      }
+    },
+    {
+      "name": "7c. Erro ao Atualizar Pagamento Inexistente (404)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status é 404 Not Found', function () {",
+              "    pm.response.to.have.status(404);",
+              "});",
+              "pm.test('ErrorResponse com status 404', function () {",
+              "    pm.expect(pm.response.json().status).to.eql(404);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"clienteId\": {{clientePagId}},\n  \"valorTotal\": 20.00,\n  \"formaPagamento\": \"PIX\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/pagamentos/update/999999",
+          "host": ["{{baseUrl}}"],
+          "path": ["pagamentos", "update", "999999"]
+        }
+      }
+    },
+    {
+      "name": "8a. Excluir/Estornar Pagamento Existente (204)",
       "event": [
         {
           "listen": "test",
@@ -277,6 +544,162 @@
           "raw": "{{baseUrl}}/pagamentos/delete/{{pagamentoId}}",
           "host": ["{{baseUrl}}"],
           "path": ["pagamentos", "delete", "{{pagamentoId}}"]
+        }
+      }
+    },
+    {
+      "name": "8b. Confirmar Remoção do Recibo no GET por ID (404)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status é 404 Not Found', function () {",
+              "    pm.response.to.have.status(404);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/pagamentos/findbyid/{{pagamentoId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["pagamentos", "findbyid", "{{pagamentoId}}"]
+        }
+      }
+    },
+    {
+      "name": "8c. Confirmar Restauração do Saldo Devedor do Cliente (200)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status é 200 OK', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test('Saldo devedor restaurado para 100 após estorno', function () {",
+              "    pm.expect(pm.response.json().saldoDevedor).to.eql(100);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/clientes/findbyid/{{clientePagId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["clientes", "findbyid", "{{clientePagId}}"]
+        }
+      }
+    },
+    {
+      "name": "8d. Excluir Pagamento Inexistente (404)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status é 404 Not Found', function () {",
+              "    pm.response.to.have.status(404);",
+              "});",
+              "pm.test('ErrorResponse com status 404', function () {",
+              "    pm.expect(pm.response.json().status).to.eql(404);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/pagamentos/delete/999999",
+          "host": ["{{baseUrl}}"],
+          "path": ["pagamentos", "delete", "999999"]
+        }
+      }
+    },
+    {
+      "name": "9a. Cleanup — Cancelar Venda FIADO de Teste (204)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status é 204 No Content', function () {",
+              "    pm.response.to.have.status(204);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PATCH",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/vendas/cancelar/{{vendaPagId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["vendas", "cancelar", "{{vendaPagId}}"]
+        }
+      }
+    },
+    {
+      "name": "9b. Cleanup — Inativar Produto de Teste (204)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status é 204 No Content', function () {",
+              "    pm.response.to.have.status(204);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/produtos/delete/{{produtoPagId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["produtos", "delete", "{{produtoPagId}}"]
+        }
+      }
+    },
+    {
+      "name": "9c. Cleanup — Inativar Cliente de Teste (204)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status é 204 No Content', function () {",
+              "    pm.response.to.have.status(204);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/clientes/delete/{{clientePagId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["clientes", "delete", "{{clientePagId}}"]
         }
       }
     }

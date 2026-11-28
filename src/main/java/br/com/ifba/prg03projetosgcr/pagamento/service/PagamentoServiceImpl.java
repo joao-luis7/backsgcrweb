@@ -10,6 +10,7 @@ import br.com.ifba.prg03projetosgcr.cliente.entity.Cliente;
 import br.com.ifba.prg03projetosgcr.cliente.service.ClienteService;
 import br.com.ifba.prg03projetosgcr.infrastructure.exception.RecursoNaoEncontradoException;
 import br.com.ifba.prg03projetosgcr.pagamento.entity.FormaPagamento;
+import jakarta.persistence.EntityManager;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
@@ -31,6 +32,7 @@ public class PagamentoServiceImpl implements PagamentoService{
     
     // Injetamos o ClienteService para poder alterar o saldo devedor do cliente
     private final ClienteService clienteService;
+    private final EntityManager entityManager;
     
     @Override
     @Transactional
@@ -84,18 +86,21 @@ public class PagamentoServiceImpl implements PagamentoService{
     }
     
     @Override
+    @Transactional(readOnly = true)
     public List<Pagamento> findAll() {
         log.debug("Buscando todos os pagamentos registrados");
         return pagamentoRepository.findAll();
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Pagamento findById(Long id) {
         return pagamentoRepository.findByIdComCliente(id)
                 .orElseThrow(() -> new RecursoNaoEncontradoException("Recibo de pagamento não encontrado com o ID: " + id));
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<Pagamento> findByClienteId(Long idCliente) {
         log.debug("Buscando histórico de pagamentos do cliente ID: {}", idCliente);
         return pagamentoRepository.findByClienteId(idCliente); // Esse é aquele método automático do Repository que criamos!
@@ -134,7 +139,13 @@ public class PagamentoServiceImpl implements PagamentoService{
             throw new IllegalArgumentException("O ID do pagamento é obrigatório para atualização.");
         }
         log.info("Atualizando pagamento ID: {}", pagamentoAtualizado.getId());
-        
+
+        // Desanexa a instância caso tenha sido alterada no controller via Open-In-View,
+        // garantindo que findById abaixo busque os valores originais do banco para o estorno.
+        if (entityManager.contains(pagamentoAtualizado)) {
+            entityManager.detach(pagamentoAtualizado);
+        }
+
         // Busca como o pagamento estava ANTES de ser alterado
         Pagamento pagamentoAntigo = findById(pagamentoAtualizado.getId());
         
@@ -175,6 +186,7 @@ public class PagamentoServiceImpl implements PagamentoService{
     }
     
     @Override
+    @Transactional(readOnly = true)
     public Double calcularFaturamentoUltimos30Dias() {
         // Descobre a data e hora de exatos 30 dias atrás
         java.time.LocalDateTime trintaDiasAtras = java.time.LocalDateTime.now().minusDays(30);

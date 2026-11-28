@@ -366,6 +366,308 @@
           "path": ["funcionarios", "findbyid", "999999"]
         }
       }
+    },
+    {
+      "name": "8a. Atualizar Funcionário Mantendo Senha Atual (200)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status é 200 OK', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "const json = pm.response.json();",
+              "pm.test('Atualiza dados mantendo ativo e sem expor senha', function () {",
+              "    pm.expect(json.id).to.eql(Number(pm.collectionVariables.get('funcionarioId')));",
+              "    pm.expect(json.nome).to.eql('Carlos Atualizado');",
+              "    pm.expect(json.perfil).to.eql('ADMIN');",
+              "    pm.expect(json.ativo).to.eql(true);",
+              "    pm.expect(json).to.not.have.property('senha');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nome\": \"Carlos Atualizado\",\n  \"username\": \"{{usernameDinamico}}\",\n  \"perfil\": \"ADMIN\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/funcionarios/update/{{funcionarioId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["funcionarios", "update", "{{funcionarioId}}"]
+        }
+      }
+    },
+    {
+      "name": "8b. Confirmar Login com Senha Preservada Após PUT (200)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status é 200 OK', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test('Login funciona com a senha original preservada', function () {",
+              "    pm.expect(pm.response.json().id).to.eql(Number(pm.collectionVariables.get('funcionarioId')));",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"{{usernameDinamico}}\",\n  \"senha\": \"1234\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/funcionarios/autenticar",
+          "host": ["{{baseUrl}}"],
+          "path": ["funcionarios", "autenticar"]
+        }
+      }
+    },
+    {
+      "name": "8c. Atualizar Funcionário Alterando Senha (200)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status é 200 OK', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "const json = pm.response.json();",
+              "pm.test('Atualiza nome, perfil e não expõe senha', function () {",
+              "    pm.expect(json.nome).to.eql('Carlos Senha Nova');",
+              "    pm.expect(json.perfil).to.eql('CAIXA');",
+              "    pm.expect(json).to.not.have.property('senha');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nome\": \"Carlos Senha Nova\",\n  \"username\": \"{{usernameDinamico}}\",\n  \"senha\": \"novaSenha456\",\n  \"perfil\": \"CAIXA\",\n  \"ativo\": true\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/funcionarios/update/{{funcionarioId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["funcionarios", "update", "{{funcionarioId}}"]
+        }
+      }
+    },
+    {
+      "name": "8d. Confirmar Login com Nova Senha Após PUT (200)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status é 200 OK', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test('Login funciona com a nova senha', function () {",
+              "    pm.expect(pm.response.json().id).to.eql(Number(pm.collectionVariables.get('funcionarioId')));",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"{{usernameDinamico}}\",\n  \"senha\": \"novaSenha456\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/funcionarios/autenticar",
+          "host": ["{{baseUrl}}"],
+          "path": ["funcionarios", "autenticar"]
+        }
+      }
+    },
+    {
+      "name": "8e. Erro ao Atualizar com Username Duplicado (400)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status é 400 Bad Request', function () {",
+              "    pm.response.to.have.status(400);",
+              "});",
+              "pm.test('Contém mensagem de username duplicado', function () {",
+              "    pm.expect(pm.response.json().message).to.include('Já existe um funcionário cadastrado com este username.');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nome\": \"Conflito Admin\",\n  \"username\": \"admin\",\n  \"perfil\": \"CAIXA\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/funcionarios/update/{{funcionarioId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["funcionarios", "update", "{{funcionarioId}}"]
+        }
+      }
+    },
+    {
+      "name": "8f. Erro ao Atualizar com Payload Inválido (400)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status é 400 Bad Request', function () {",
+              "    pm.response.to.have.status(400);",
+              "});",
+              "pm.test('Payload ErrorResponse para 400', function () {",
+              "    pm.expect(pm.response.json().status).to.eql(400);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nome\": \"   \",\n  \"username\": \"\",\n  \"perfil\": null\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/funcionarios/update/{{funcionarioId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["funcionarios", "update", "{{funcionarioId}}"]
+        }
+      }
+    },
+    {
+      "name": "8g. Erro ao Atualizar Funcionário Inexistente (404)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status é 404 Not Found', function () {",
+              "    pm.response.to.have.status(404);",
+              "});",
+              "pm.test('ErrorResponse com status 404', function () {",
+              "    pm.expect(pm.response.json().status).to.eql(404);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nome\": \"Inexistente\",\n  \"username\": \"inexistente.put\",\n  \"perfil\": \"CAIXA\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/funcionarios/update/999999",
+          "host": ["{{baseUrl}}"],
+          "path": ["funcionarios", "update", "999999"]
+        }
+      }
     }
   ]
 }

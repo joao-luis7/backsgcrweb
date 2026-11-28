@@ -21,4 +21,6 @@ public interface FuncionarioService {
     List<Funcionario> findAllAtivos();
 
     Funcionario findById(Long id);
+
+    Funcionario update(Funcionario funcionario);
 }

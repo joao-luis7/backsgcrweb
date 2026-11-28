@@ -11,6 +11,7 @@ import br.com.ifba.prg03projetosgcr.infrastructure.exception.RecursoNaoEncontrad
 import br.com.ifba.prg03projetosgcr.infrastructure.exception.RegraNegocioException;
 import br.com.ifba.prg03projetosgcr.util.ValidatorUtil;
 import jakarta.annotation.PostConstruct;
+import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -29,6 +30,7 @@ public class FuncionarioServiceImpl implements FuncionarioService{
     
     private final FuncionarioRepository funcionarioRepository;
     private final ValidatorUtil validatorUtil;
+    private final EntityManager entityManager;
     
     /**
      * SEEDER - Inicialização do MVP
@@ -125,6 +127,35 @@ public class FuncionarioServiceImpl implements FuncionarioService{
                     log.warn("Funcionário não encontrado para o ID: {}", id);
                     return new RecursoNaoEncontradoException("Funcionário não encontrado para o ID: " + id);
                 });
+    }
+
+    @Override
+    @Transactional
+    public Funcionario update(Funcionario funcionario) {
+        if (funcionario.getId() == null) {
+            log.warn("Tentativa de atualizar funcionário sem ID informado.");
+            throw new RegraNegocioException("O ID do funcionário é obrigatório para atualização.");
+        }
+
+        log.info("Atualizando funcionário ID: {}", funcionario.getId());
+        // Desanexa a instância caso tenha sido alterada no controller via Open-In-View,
+        // evitando auto-flush prematuro antes da validação de unicidade de username.
+        if (entityManager.contains(funcionario)) {
+            entityManager.detach(funcionario);
+        }
+        findById(funcionario.getId());
+        validarFuncionario(funcionario);
+
+        funcionarioRepository.findByUsername(funcionario.getUsername())
+                .filter(outro -> !outro.getId().equals(funcionario.getId()))
+                .ifPresent(outro -> {
+                    log.warn("Tentativa de atualização para username já utilizado por outro funcionário: {}", funcionario.getUsername());
+                    throw new RegraNegocioException("Já existe um funcionário cadastrado com este username.");
+                });
+
+        Funcionario atualizado = funcionarioRepository.save(funcionario);
+        log.info("Funcionário ID {} atualizado com sucesso.", atualizado.getId());
+        return atualizado;
     }
     
     private void validarFuncionario(Funcionario funcionario) {

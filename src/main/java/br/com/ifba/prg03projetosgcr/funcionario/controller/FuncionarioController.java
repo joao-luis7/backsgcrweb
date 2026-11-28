@@ -2,6 +2,7 @@ package br.com.ifba.prg03projetosgcr.funcionario.controller;
 
 import br.com.ifba.prg03projetosgcr.funcionario.dto.FuncionarioRequestDTO;
 import br.com.ifba.prg03projetosgcr.funcionario.dto.FuncionarioResponseDTO;
+import br.com.ifba.prg03projetosgcr.funcionario.dto.FuncionarioUpdateRequestDTO;
 import br.com.ifba.prg03projetosgcr.funcionario.dto.LoginRequestDTO;
 import br.com.ifba.prg03projetosgcr.funcionario.entity.Funcionario;
 import br.com.ifba.prg03projetosgcr.funcionario.service.FuncionarioService;
@@ -15,6 +16,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -115,6 +117,39 @@ public class FuncionarioController {
         log.debug("Requisição para buscar funcionário pelo ID {} recebida no controller.", id);
         Funcionario funcionario = funcionarioService.findById(id);
         return ResponseEntity.ok(FuncionarioResponseDTO.fromEntity(funcionario));
+    }
+
+    /**
+     * @author João Luis
+     * @apiNote Endpoint criado desde a versão 1.0.0
+     *
+     * Atualiza os dados cadastrais de um funcionário existente. O id vem exclusivamente da URL.
+     * Se senha ou ativo não forem informados, os valores atuais do registro são preservados.
+     * @param id identificador do funcionário vindo da URL
+     * @param dto novos dados cadastrais do funcionário
+     * @return 200 OK com os dados públicos atualizados (sem senha), 400 se inválido ou 404 se inexistente.
+     */
+    @PutMapping(path = "/update/{id}",
+            consumes = MediaType.APPLICATION_JSON_VALUE,
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<FuncionarioResponseDTO> update(@PathVariable("id") Long id,
+                                                         @Valid @RequestBody FuncionarioUpdateRequestDTO dto) {
+        log.info("Requisição para atualizar funcionário ID: {}", id);
+
+        Funcionario existente = funcionarioService.findById(id);
+        existente.setNome(dto.nome());
+        existente.setUsername(dto.username());
+        existente.setPerfil(dto.perfil());
+
+        if (dto.senha() != null && !dto.senha().isBlank()) {
+            existente.setSenha(dto.senha());
+        }
+        if (dto.ativo() != null) {
+            existente.setAtivo(dto.ativo());
+        }
+
+        Funcionario atualizado = funcionarioService.update(existente);
+        return ResponseEntity.status(HttpStatus.OK).body(FuncionarioResponseDTO.fromEntity(atualizado));
     }
 
     private List<FuncionarioResponseDTO> toResponseList(List<Funcionario> funcionarios) {

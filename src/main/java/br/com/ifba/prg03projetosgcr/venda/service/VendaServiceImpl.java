@@ -123,6 +123,7 @@ public class VendaServiceImpl implements VendaService{
     }
     
     @Override
+    @Transactional(readOnly = true)
     public List<Venda> findAll() {
         log.debug("Executando consulta geral de vendas cadastradas.");
         return vendaRepository.findAll();

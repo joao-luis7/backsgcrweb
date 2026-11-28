@@ -32,8 +32,8 @@ public interface VendaRepository extends JpaRepository<Venda, Long> {
     
     //Fetch explícito do Cliente (herdado de Transacao)
     @EntityGraph(attributePaths = "cliente")
-    @Query("SELECT v FROM Venda v WHERE v.id = :id")        
-    Optional<Venda> findByIdComCliente(Long id);
+    @Query("SELECT v FROM Venda v WHERE v.id = :id")
+    Optional<Venda> findByIdComCliente(@Param("id") Long id);
     
     // NOVO MÉTODO: Faz o fetch (carregamento antecipado) dos itens na mesma consulta
     @Query("SELECT v FROM Venda v JOIN FETCH v.cliente JOIN FETCH v.itens i JOIN FETCH i.produto WHERE v.id = :id")

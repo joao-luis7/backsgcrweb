@@ -11,12 +11,111 @@
       "type": "string"
     },
     {
+      "key": "clienteVendaId",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "produtoVendaId",
+      "value": "1",
+      "type": "string"
+    },
+    {
       "key": "vendaId",
       "value": "1",
       "type": "string"
     }
   ],
   "item": [
+    {
+      "name": "0a. Setup — Criar Cliente para Venda (201)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status é 201 Created', function () {",
+              "    pm.response.to.have.status(201);",
+              "});",
+              "const json = pm.response.json();",
+              "pm.test('Cliente criado com id', function () {",
+              "    pm.expect(json.id).to.be.a('number');",
+              "});",
+              "pm.collectionVariables.set('clienteVendaId', json.id);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nome\": \"Cliente Teste Venda\",\n  \"telefone\": \"77999112233\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/clientes/save",
+          "host": ["{{baseUrl}}"],
+          "path": ["clientes", "save"]
+        }
+      }
+    },
+    {
+      "name": "0b. Setup — Criar Produto com Estoque para Venda (201)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status é 201 Created', function () {",
+              "    pm.response.to.have.status(201);",
+              "});",
+              "const json = pm.response.json();",
+              "pm.test('Produto criado com id e estoque', function () {",
+              "    pm.expect(json.id).to.be.a('number');",
+              "    pm.expect(json.quantidadeEstoque).to.eql(20);",
+              "});",
+              "pm.collectionVariables.set('produtoVendaId', json.id);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nome\": \"Produto Teste Venda\",\n  \"descricao\": \"Item de teste\",\n  \"precoUnidade\": 25.00,\n  \"precoCusto\": 12.00,\n  \"quantidadeEstoque\": 20\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/produtos/save",
+          "host": ["{{baseUrl}}"],
+          "path": ["produtos", "save"]
+        }
+      }
+    },
     {
       "name": "1. Venda à Vista Sem Cliente (201)",
       "event": [
@@ -29,10 +128,10 @@
               "    pm.response.to.have.status(201);",
               "});",
               "const json = pm.response.json();",
-              "pm.test('Vincula Não Identificado e calcula valores', function () {",
-              "    pm.expect(json.id).to.be.a('number');",
+              "pm.test('Venda à vista calculada no servidor (SEC-03)', function () {",
               "    pm.expect(json.clienteNome).to.eql('Não Identificado');",
-              "    pm.expect(json.valorTotal).to.be.a('number');",
+              "    pm.expect(json.valorTotal).to.eql(50);",
+              "    pm.expect(json.statusVenda).to.eql('FINALIZADA');",
               "});"
             ]
           }
@@ -48,7 +147,7 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"clienteId\": null,\n  \"formaPagamento\": \"PIX\",\n  \"itens\": [\n    { \"produtoId\": 1, \"quantidade\": 2 }\n  ]\n}",
+          "raw": "{\n  \"clienteId\": null,\n  \"formaPagamento\": \"PIX\",\n  \"itens\": [\n    {\n      \"produtoId\": {{produtoVendaId}},\n      \"quantidade\": 2\n    }\n  ]\n}",
           "options": {
             "raw": {
               "language": "json"
@@ -63,7 +162,7 @@
       }
     },
     {
-      "name": "2. Venda FIADO com Cliente (201)",
+      "name": "2. Venda FIADO com Cliente Identificado (201)",
       "event": [
         {
           "listen": "test",
@@ -74,10 +173,10 @@
               "    pm.response.to.have.status(201);",
               "});",
               "const json = pm.response.json();",
-              "pm.test('Registra venda FIADO com cliente', function () {",
-              "    pm.expect(json.id).to.be.a('number');",
-              "    pm.expect(json.clienteId).to.eql(1);",
+              "pm.test('Venda FIADO registrada corretamente', function () {",
+              "    pm.expect(json.clienteId).to.eql(Number(pm.collectionVariables.get('clienteVendaId')));",
               "    pm.expect(json.formaPagamento).to.eql('FIADO');",
+              "    pm.expect(json.valorTotal).to.eql(75);",
               "});",
               "pm.collectionVariables.set('vendaId', json.id);"
             ]
@@ -94,7 +193,7 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"clienteId\": 1,\n  \"formaPagamento\": \"FIADO\",\n  \"itens\": [\n    { \"produtoId\": 1, \"quantidade\": 1 }\n  ]\n}",
+          "raw": "{\n  \"clienteId\": {{clienteVendaId}},\n  \"formaPagamento\": \"FIADO\",\n  \"itens\": [\n    {\n      \"produtoId\": {{produtoVendaId}},\n      \"quantidade\": 3\n    }\n  ]\n}",
           "options": {
             "raw": {
               "language": "json"
@@ -133,7 +232,7 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"clienteId\": null,\n  \"formaPagamento\": \"FIADO\",\n  \"itens\": [\n    { \"produtoId\": 1, \"quantidade\": 1 }\n  ]\n}",
+          "raw": "{\n  \"clienteId\": null,\n  \"formaPagamento\": \"FIADO\",\n  \"itens\": [\n    {\n      \"produtoId\": {{produtoVendaId}},\n      \"quantidade\": 1\n    }\n  ]\n}",
           "options": {
             "raw": {
               "language": "json"
@@ -172,7 +271,7 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"clienteId\": null,\n  \"formaPagamento\": \"PIX\",\n  \"itens\": [\n    { \"produtoId\": 1, \"quantidade\": 99999 }\n  ]\n}",
+          "raw": "{\n  \"clienteId\": null,\n  \"formaPagamento\": \"PIX\",\n  \"itens\": [\n    {\n      \"produtoId\": {{produtoVendaId}},\n      \"quantidade\": 99999\n    }\n  ]\n}",
           "options": {
             "raw": {
               "language": "json"
@@ -187,7 +286,7 @@
       }
     },
     {
-      "name": "5. Listar Vendas (200)",
+      "name": "5. Listar Todas as Vendas (200)",
       "event": [
         {
           "listen": "test",
@@ -197,8 +296,8 @@
               "pm.test('Status é 200 OK', function () {",
               "    pm.response.to.have.status(200);",
               "});",
-              "pm.test('Retorna array de vendas', function () {",
-              "    pm.expect(pm.response.json()).to.be.an('array');",
+              "pm.test('Retorna array não vazio de vendas', function () {",
+              "    pm.expect(pm.response.json()).to.be.an('array').that.is.not.empty;",
               "});"
             ]
           }
@@ -215,15 +314,21 @@
       }
     },
     {
-      "name": "6. Buscar Venda por ID (200)",
+      "name": "6a. Buscar Venda Detalhada por ID Existente (200)",
       "event": [
         {
           "listen": "test",
           "script": {
             "type": "text/javascript",
             "exec": [
-              "pm.test('Status é 200 OK ou 404 Not Found', function () {",
-              "    pm.expect([200, 404]).to.include(pm.response.code);",
+              "pm.test('Status é 200 OK', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "const json = pm.response.json();",
+              "pm.test('Retorna venda detalhada com itens', function () {",
+              "    pm.expect(json.id).to.eql(Number(pm.collectionVariables.get('vendaId')));",
+              "    pm.expect(json.itens).to.be.an('array').with.lengthOf(1);",
+              "    pm.expect(json.statusVenda).to.eql('FINALIZADA');",
               "});"
             ]
           }
@@ -240,7 +345,35 @@
       }
     },
     {
-      "name": "7. Cancelar Venda (204)",
+      "name": "6b. Buscar Venda por ID Inexistente (404)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status é 404 Not Found', function () {",
+              "    pm.response.to.have.status(404);",
+              "});",
+              "pm.test('ErrorResponse com status 404', function () {",
+              "    pm.expect(pm.response.json().status).to.eql(404);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/vendas/findbyid/999999",
+          "host": ["{{baseUrl}}"],
+          "path": ["vendas", "findbyid", "999999"]
+        }
+      }
+    },
+    {
+      "name": "7a. Cancelar Venda FIADO Existente (204)",
       "event": [
         {
           "listen": "test",
@@ -261,6 +394,168 @@
           "raw": "{{baseUrl}}/vendas/cancelar/{{vendaId}}",
           "host": ["{{baseUrl}}"],
           "path": ["vendas", "cancelar", "{{vendaId}}"]
+        }
+      }
+    },
+    {
+      "name": "7b. Confirmar Status CANCELADA e Estorno Pós-Cancelamento (200)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status é 200 OK', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test('Venda consta como CANCELADA', function () {",
+              "    pm.expect(pm.response.json().statusVenda).to.eql('CANCELADA');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/vendas/findbyid/{{vendaId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["vendas", "findbyid", "{{vendaId}}"]
+        }
+      }
+    },
+    {
+      "name": "7c. Confirmar Saldo Devedor Zerado Após Cancelamento (200)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status é 200 OK', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test('Saldo devedor zerado após estorno (DOM-05)', function () {",
+              "    pm.expect(pm.response.json().saldoDevedor).to.eql(0);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/clientes/findbyid/{{clienteVendaId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["clientes", "findbyid", "{{clienteVendaId}}"]
+        }
+      }
+    },
+    {
+      "name": "7d. Erro ao Tentar Duplo Cancelamento de Venda (400)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status é 400 Bad Request', function () {",
+              "    pm.response.to.have.status(400);",
+              "});",
+              "pm.test('Contém mensagem de venda já cancelada', function () {",
+              "    pm.expect(pm.response.text()).to.include('já consta como CANCELADA');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PATCH",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/vendas/cancelar/{{vendaId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["vendas", "cancelar", "{{vendaId}}"]
+        }
+      }
+    },
+    {
+      "name": "7e. Cancelar Venda Inexistente (404)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status é 404 Not Found', function () {",
+              "    pm.response.to.have.status(404);",
+              "});",
+              "pm.test('ErrorResponse com status 404', function () {",
+              "    pm.expect(pm.response.json().status).to.eql(404);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PATCH",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/vendas/cancelar/999999",
+          "host": ["{{baseUrl}}"],
+          "path": ["vendas", "cancelar", "999999"]
+        }
+      }
+    },
+    {
+      "name": "8a. Cleanup — Inativar Produto de Teste (204)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status é 204 No Content', function () {",
+              "    pm.response.to.have.status(204);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/produtos/delete/{{produtoVendaId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["produtos", "delete", "{{produtoVendaId}}"]
+        }
+      }
+    },
+    {
+      "name": "8b. Cleanup — Inativar Cliente de Teste (204)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status é 204 No Content', function () {",
+              "    pm.response.to.have.status(204);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/clientes/delete/{{clienteVendaId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["clientes", "delete", "{{clienteVendaId}}"]
         }
       }
     }

@@ -61,17 +61,20 @@ public class ProdutoServiceImpl implements ProdutoService{
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<Produto> findAll() {
         return produtoRepository.findAll();
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Produto findById(Long id) {
         return produtoRepository.findById(id)
                 .orElseThrow(() -> new RecursoNaoEncontradoException("Produto não encontrado com o ID: " + id));
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<Produto> findByNome(String nome) {
        if (nome == null || nome.trim().isEmpty()) {
             return findAll();
@@ -80,11 +83,13 @@ public class ProdutoServiceImpl implements ProdutoService{
     }
     
     @Override
+    @Transactional(readOnly = true)
     public List<Produto> findAllAtivos() {
         return produtoRepository.findByAtivoTrue(); 
     }
     
     @Override
+    @Transactional(readOnly = true)
     public List<Produto> findAllAtivosComCategoria() {
         log.debug("A listar todos os produtos ativos trazendo as suas respectivas categorias");
         return produtoRepository.findAllComCategoriaByAtivoTrue();

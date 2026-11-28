@@ -23,6 +23,51 @@
   ],
   "item": [
     {
+      "name": "0. Setup — Criar Categoria para Produto (201)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status é 201 Created', function () {",
+              "    pm.response.to.have.status(201);",
+              "});",
+              "const json = pm.response.json();",
+              "pm.test('Retorna categoria criada com id', function () {",
+              "    pm.expect(json.id).to.be.a('number');",
+              "    pm.expect(json.nome).to.eql('Bebidas Teste Produto');",
+              "});",
+              "pm.collectionVariables.set('categoriaId', json.id);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nome\": \"Bebidas Teste Produto\",\n  \"descricao\": \"Categoria temporária para validação de produtos\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/categorias/save",
+          "host": ["{{baseUrl}}"],
+          "path": ["categorias", "save"]
+        }
+      }
+    },
+    {
       "name": "1. Cadastrar Produto (201)",
       "event": [
         {
@@ -34,11 +79,11 @@
               "    pm.response.to.have.status(201);",
               "});",
               "const json = pm.response.json();",
-              "pm.test('Retorna ProdutoResponseDTO com id, categoriaId e categoriaNome', function () {",
+              "pm.test('Retorna ProdutoResponseDTO com id, categoriaId, categoriaNome e ativo=true', function () {",
               "    pm.expect(json.id).to.be.a('number');",
-              "    pm.expect(json.nome).to.eql('Refrigerante Cola 2L');",
-              "    pm.expect(json.categoriaId).to.eql(1);",
-              "    pm.expect(json.categoriaNome).to.be.a('string');",
+              "    pm.expect(json.categoriaId).to.eql(Number(pm.collectionVariables.get('categoriaId')));",
+              "    pm.expect(json.categoriaNome).to.eql('Bebidas Teste Produto');",
+              "    pm.expect(json.ativo).to.eql(true);",
               "});",
               "pm.collectionVariables.set('produtoId', json.id);"
             ]
@@ -55,7 +100,7 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"nome\": \"Refrigerante Cola 2L\",\n  \"descricao\": \"Garrafa PET 2 Litros\",\n  \"precoUnidade\": 10.50,\n  \"precoCusto\": 6.00,\n  \"quantidadeEstoque\": 20,\n  \"categoriaId\": 1\n}",
+          "raw": "{\n  \"nome\": \"Refrigerante Cola 2L\",\n  \"descricao\": \"Garrafa PET 2 Litros\",\n  \"precoUnidade\": 10.50,\n  \"precoCusto\": 6.00,\n  \"quantidadeEstoque\": 20,\n  \"categoriaId\": {{categoriaId}}\n}",
           "options": {
             "raw": {
               "language": "json"
@@ -70,7 +115,7 @@
       }
     },
     {
-      "name": "2. Validação de Preço/Estoque (400)",
+      "name": "2. Validação de Preço/Estoque Inválidos no POST (400)",
       "event": [
         {
           "listen": "test",
@@ -94,7 +139,7 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"nome\": \"Refrigerante Cola 2L\",\n  \"descricao\": \"Garrafa PET 2 Litros\",\n  \"precoUnidade\": 0,\n  \"precoCusto\": 6.00,\n  \"quantidadeEstoque\": -1,\n  \"categoriaId\": 1\n}",
+          "raw": "{\n  \"nome\": \"Produto Inválido\",\n  \"descricao\": \"Teste 400\",\n  \"precoUnidade\": 0,\n  \"precoCusto\": 6.00,\n  \"quantidadeEstoque\": -1,\n  \"categoriaId\": {{categoriaId}}\n}",
           "options": {
             "raw": {
               "language": "json"
@@ -109,7 +154,7 @@
       }
     },
     {
-      "name": "3. Listar Todos (200)",
+      "name": "3. Listar Todos os Produtos (200)",
       "event": [
         {
           "listen": "test",
@@ -119,8 +164,8 @@
               "pm.test('Status é 200 OK', function () {",
               "    pm.response.to.have.status(200);",
               "});",
-              "pm.test('Retorna array de produtos', function () {",
-              "    pm.expect(pm.response.json()).to.be.an('array');",
+              "pm.test('Retorna array não vazio de produtos', function () {",
+              "    pm.expect(pm.response.json()).to.be.an('array').that.is.not.empty;",
               "});"
             ]
           }
@@ -137,7 +182,7 @@
       }
     },
     {
-      "name": "4. Listar Ativos (200)",
+      "name": "4. Listar Produtos Ativos (200)",
       "event": [
         {
           "listen": "test",
@@ -167,7 +212,7 @@
       }
     },
     {
-      "name": "5. Listar Ativos com Categoria (200)",
+      "name": "5. Listar Produtos Ativos com Categoria (200)",
       "event": [
         {
           "listen": "test",
@@ -177,8 +222,13 @@
               "pm.test('Status é 200 OK', function () {",
               "    pm.response.to.have.status(200);",
               "});",
-              "pm.test('Retorna array de produtos ativos', function () {",
-              "    pm.expect(pm.response.json()).to.be.an('array');",
+              "const list = pm.response.json();",
+              "const expectedId = Number(pm.collectionVariables.get('produtoId'));",
+              "pm.test('Contém o produto criado com categoriaNome preenchido', function () {",
+              "    pm.expect(list).to.be.an('array');",
+              "    const item = list.find(p => p.id === expectedId);",
+              "    pm.expect(item).to.be.an('object');",
+              "    pm.expect(item.categoriaNome).to.eql('Bebidas Teste Produto');",
               "});"
             ]
           }
@@ -195,15 +245,18 @@
       }
     },
     {
-      "name": "6. Buscar por ID (200)",
+      "name": "6a. Buscar Produto por ID Existente (200)",
       "event": [
         {
           "listen": "test",
           "script": {
             "type": "text/javascript",
             "exec": [
-              "pm.test('Status é 200 OK ou 404 Not Found', function () {",
-              "    pm.expect([200, 404]).to.include(pm.response.code);",
+              "pm.test('Status é 200 OK', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test('Retorna produto esperado', function () {",
+              "    pm.expect(pm.response.json().id).to.eql(Number(pm.collectionVariables.get('produtoId')));",
               "});"
             ]
           }
@@ -220,7 +273,35 @@
       }
     },
     {
-      "name": "7. Buscar por Nome (200)",
+      "name": "6b. Buscar Produto por ID Inexistente (404)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status é 404 Not Found', function () {",
+              "    pm.response.to.have.status(404);",
+              "});",
+              "pm.test('ErrorResponse com status 404', function () {",
+              "    pm.expect(pm.response.json().status).to.eql(404);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/produtos/findbyid/999999",
+          "host": ["{{baseUrl}}"],
+          "path": ["produtos", "findbyid", "999999"]
+        }
+      }
+    },
+    {
+      "name": "7. Buscar Produto por Nome (200)",
       "event": [
         {
           "listen": "test",
@@ -230,8 +311,8 @@
               "pm.test('Status é 200 OK', function () {",
               "    pm.response.to.have.status(200);",
               "});",
-              "pm.test('Retorna array de produtos', function () {",
-              "    pm.expect(pm.response.json()).to.be.an('array');",
+              "pm.test('Retorna array não vazio', function () {",
+              "    pm.expect(pm.response.json()).to.be.an('array').that.is.not.empty;",
               "});"
             ]
           }
@@ -254,15 +335,21 @@
       }
     },
     {
-      "name": "8. Atualizar Produto (200)",
+      "name": "8a. Atualizar Produto Existente (200)",
       "event": [
         {
           "listen": "test",
           "script": {
             "type": "text/javascript",
             "exec": [
-              "pm.test('Status é 200 OK ou 404 Not Found', function () {",
-              "    pm.expect([200, 404]).to.include(pm.response.code);",
+              "pm.test('Status é 200 OK', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "const json = pm.response.json();",
+              "pm.test('Atualiza preço e estoque do produto', function () {",
+              "    pm.expect(json.id).to.eql(Number(pm.collectionVariables.get('produtoId')));",
+              "    pm.expect(json.precoUnidade).to.eql(11);",
+              "    pm.expect(json.quantidadeEstoque).to.eql(15);",
               "});"
             ]
           }
@@ -278,7 +365,7 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"nome\": \"Refrigerante Cola 2L\",\n  \"descricao\": \"Garrafa PET 2L\",\n  \"precoUnidade\": 11.00,\n  \"precoCusto\": 6.50,\n  \"quantidadeEstoque\": 15,\n  \"ativo\": true,\n  \"categoriaId\": 1\n}",
+          "raw": "{\n  \"nome\": \"Refrigerante Cola 2L Atualizado\",\n  \"descricao\": \"Garrafa PET 2 Litros\",\n  \"precoUnidade\": 11.00,\n  \"precoCusto\": 6.00,\n  \"quantidadeEstoque\": 15,\n  \"categoriaId\": {{categoriaId}}\n}",
           "options": {
             "raw": {
               "language": "json"
@@ -293,7 +380,88 @@
       }
     },
     {
-      "name": "9. Inativar Produto (204)",
+      "name": "8b. Atualizar Produto com Payload Inválido (400)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status é 400 Bad Request', function () {",
+              "    pm.response.to.have.status(400);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nome\": \"   \",\n  \"descricao\": \"Teste 400\",\n  \"precoUnidade\": -5,\n  \"precoCusto\": 6.00,\n  \"quantidadeEstoque\": -1,\n  \"categoriaId\": {{categoriaId}}\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/produtos/update/{{produtoId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["produtos", "update", "{{produtoId}}"]
+        }
+      }
+    },
+    {
+      "name": "8c. Atualizar Produto Inexistente (404)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status é 404 Not Found', function () {",
+              "    pm.response.to.have.status(404);",
+              "});",
+              "pm.test('ErrorResponse com status 404', function () {",
+              "    pm.expect(pm.response.json().status).to.eql(404);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nome\": \"Produto Inexistente\",\n  \"descricao\": \"Teste 404\",\n  \"precoUnidade\": 10.00,\n  \"precoCusto\": 5.00,\n  \"quantidadeEstoque\": 10,\n  \"categoriaId\": {{categoriaId}}\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/produtos/update/999999",
+          "host": ["{{baseUrl}}"],
+          "path": ["produtos", "update", "999999"]
+        }
+      }
+    },
+    {
+      "name": "9a. Inativar Produto Existente (204)",
       "event": [
         {
           "listen": "test",
@@ -314,6 +482,87 @@
           "raw": "{{baseUrl}}/produtos/delete/{{produtoId}}",
           "host": ["{{baseUrl}}"],
           "path": ["produtos", "delete", "{{produtoId}}"]
+        }
+      }
+    },
+    {
+      "name": "9b. Confirmar Inativação Lógica Pós-DELETE (200)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status é 200 OK', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test('Produto preservado com ativo === false (DOM-05)', function () {",
+              "    pm.expect(pm.response.json().ativo).to.eql(false);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/produtos/findbyid/{{produtoId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["produtos", "findbyid", "{{produtoId}}"]
+        }
+      }
+    },
+    {
+      "name": "9c. Inativar Produto Inexistente (404)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status é 404 Not Found', function () {",
+              "    pm.response.to.have.status(404);",
+              "});",
+              "pm.test('ErrorResponse com status 404', function () {",
+              "    pm.expect(pm.response.json().status).to.eql(404);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/produtos/delete/999999",
+          "host": ["{{baseUrl}}"],
+          "path": ["produtos", "delete", "999999"]
+        }
+      }
+    },
+    {
+      "name": "10. Cleanup — Inativar Categoria Temporária (204)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status é 204 No Content', function () {",
+              "    pm.response.to.have.status(204);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/categorias/delete/{{categoriaId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["categorias", "delete", "{{categoriaId}}"]
         }
       }
     }

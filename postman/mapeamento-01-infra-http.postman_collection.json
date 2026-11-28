@@ -1,0 +1,113 @@
+{
+  "info": {
+    "name": "SGCR - Mapeamento 01 - Infraestrutura HTTP",
+    "description": "Validação de conformidade de erros HTTP (400, 404, 405) no GlobalExceptionHandler.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Parâmetro de Rota Não Numérico (400)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status é 400 Bad Request', function () {",
+              "    pm.response.to.have.status(400);",
+              "});",
+              "pm.test('ErrorResponse padronizado para 400 sem stack trace', function () {",
+              "    const json = pm.response.json();",
+              "    const raw = pm.response.text();",
+              "    pm.expect(json.status).to.eql(400);",
+              "    pm.expect(json.error).to.eql('Bad Request');",
+              "    pm.expect(json.path).to.eql('/categorias/findbyid/abc');",
+              "    pm.expect(json.message).to.include(\"Parâmetro 'id' inválido\");",
+              "    pm.expect(raw).to.not.include('Exception');",
+              "    pm.expect(raw).to.not.include('at br.com');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/categorias/findbyid/abc",
+          "host": ["{{baseUrl}}"],
+          "path": ["categorias", "findbyid", "abc"]
+        }
+      }
+    },
+    {
+      "name": "2. Método HTTP Não Suportado no Endpoint (405)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status é 405 Method Not Allowed', function () {",
+              "    pm.response.to.have.status(405);",
+              "});",
+              "pm.test('ErrorResponse padronizado para 405', function () {",
+              "    const json = pm.response.json();",
+              "    pm.expect(json.status).to.eql(405);",
+              "    pm.expect(json.path).to.eql('/dashboard/resumo');",
+              "    pm.expect(json.message).to.include('DELETE');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/dashboard/resumo",
+          "host": ["{{baseUrl}}"],
+          "path": ["dashboard", "resumo"]
+        }
+      }
+    },
+    {
+      "name": "3. Rota Inexistente (404)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status é 404 Not Found', function () {",
+              "    pm.response.to.have.status(404);",
+              "});",
+              "pm.test('ErrorResponse padronizado para 404', function () {",
+              "    const json = pm.response.json();",
+              "    pm.expect(json.status).to.eql(404);",
+              "    pm.expect(json.error).to.eql('Not Found');",
+              "    pm.expect(json.message).to.include('Endpoint não encontrado');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/endpoint-inexistente-validacao",
+          "host": ["{{baseUrl}}"],
+          "path": ["endpoint-inexistente-validacao"]
+        }
+      }
+    }
+  ]
+}

@@ -7,9 +7,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 /**
  * Tratador global de exceções da API REST, convertendo falhas de negócio,
@@ -75,6 +78,41 @@ public class GlobalExceptionHandler {
                 "Corpo da requisição JSON inválido ou com formato incorreto.",
                 request
         );
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ErrorResponse> handleMethodArgumentTypeMismatch(
+            MethodArgumentTypeMismatchException ex,
+            HttpServletRequest request) {
+        String parametro = ex.getName();
+        String valor = ex.getValue() != null ? ex.getValue().toString() : "null";
+        String mensagem = String.format(
+                "Parâmetro '%s' inválido: o valor '%s' não é compatível com o tipo esperado.",
+                parametro, valor
+        );
+        log.warn("Tipo de parâmetro inválido em {}: {}", request.getRequestURI(), mensagem);
+        return buildResponse(HttpStatus.BAD_REQUEST, mensagem, request);
+    }
+
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    public ResponseEntity<ErrorResponse> handleHttpRequestMethodNotSupported(
+            HttpRequestMethodNotSupportedException ex,
+            HttpServletRequest request) {
+        String mensagem = String.format(
+                "Método HTTP '%s' não é suportado para este endpoint.",
+                ex.getMethod()
+        );
+        log.warn("Método HTTP não suportado em {}: {}", request.getRequestURI(), mensagem);
+        return buildResponse(HttpStatus.METHOD_NOT_ALLOWED, mensagem, request);
+    }
+
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<ErrorResponse> handleNoResourceFound(
+            NoResourceFoundException ex,
+            HttpServletRequest request) {
+        String mensagem = "Endpoint não encontrado: " + request.getRequestURI();
+        log.warn("Rota inexistente acessada: {}", request.getRequestURI());
+        return buildResponse(HttpStatus.NOT_FOUND, mensagem, request);
     }
 
     @ExceptionHandler(Exception.class)

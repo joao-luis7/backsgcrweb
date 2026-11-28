@@ -23,4 +23,6 @@ public interface FuncionarioService {
     Funcionario findById(Long id);
 
     Funcionario update(Funcionario funcionario);
+
+    void delete(Long id);
 }

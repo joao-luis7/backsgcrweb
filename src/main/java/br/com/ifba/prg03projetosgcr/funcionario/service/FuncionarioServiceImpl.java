@@ -157,6 +157,16 @@ public class FuncionarioServiceImpl implements FuncionarioService{
         log.info("Funcionário ID {} atualizado com sucesso.", atualizado.getId());
         return atualizado;
     }
+
+    @Override
+    @Transactional
+    public void delete(Long id) {
+        log.info("Solicitação de inativação lógica para o funcionário ID: {}", id);
+        Funcionario funcionario = findById(id);
+        funcionario.setAtivo(false);
+        funcionarioRepository.save(funcionario);
+        log.info("Funcionário ID {} inativado com sucesso.", id);
+    }
     
     private void validarFuncionario(Funcionario funcionario) {
         log.debug("Validando dados do funcionário: {}", funcionario.getUsername());

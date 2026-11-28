@@ -13,6 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -150,6 +151,21 @@ public class FuncionarioController {
 
         Funcionario atualizado = funcionarioService.update(existente);
         return ResponseEntity.status(HttpStatus.OK).body(FuncionarioResponseDTO.fromEntity(atualizado));
+    }
+
+    /**
+     * @author João Luis
+     * @apiNote Endpoint criado desde a versão 1.0.0
+     *
+     * Inativa logicamente um funcionário (ativo = false), preservando o histórico operacional (DOM-05).
+     * @param id identificador do funcionário vindo da URL
+     * @return 204 No Content em caso de sucesso, ou 404 Not Found se o id não existir.
+     */
+    @DeleteMapping(path = "/delete/{id}")
+    public ResponseEntity<Void> delete(@PathVariable("id") Long id) {
+        log.info("Requisição para inativar funcionário ID: {}", id);
+        funcionarioService.delete(id);
+        return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     }
 
     private List<FuncionarioResponseDTO> toResponseList(List<Funcionario> funcionarios) {

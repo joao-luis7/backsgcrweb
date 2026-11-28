@@ -305,6 +305,48 @@
       }
     },
     {
+      "name": "6c. Atualizar Categoria com Payload Inválido (400)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status é 400 Bad Request', function () {",
+              "    pm.response.to.have.status(400);",
+              "});",
+              "pm.test('Contém mensagem de nome obrigatório', function () {",
+              "    pm.expect(pm.response.text()).to.include('O nome da categoria é obrigatório.');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nome\": \"   \",\n  \"descricao\": \"Inválida\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/categorias/update/{{categoriaId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["categorias", "update", "{{categoriaId}}"]
+        }
+      }
+    },
+    {
       "name": "7a. Inativar Categoria Existente (204)",
       "event": [
         {
@@ -351,6 +393,36 @@
           "raw": "{{baseUrl}}/categorias/delete/9999",
           "host": ["{{baseUrl}}"],
           "path": ["categorias", "delete", "9999"]
+        }
+      }
+    },
+    {
+      "name": "7c. Confirmar Inativação Lógica Pós-DELETE (200)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status é 200 OK', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "const json = pm.response.json();",
+              "pm.test('Categoria preservada com ativo === false (DOM-05)', function () {",
+              "    pm.expect(json.id).to.eql(Number(pm.collectionVariables.get('categoriaId')));",
+              "    pm.expect(json.ativo).to.eql(false);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/categorias/findbyid/{{categoriaId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["categorias", "findbyid", "{{categoriaId}}"]
         }
       }
     }

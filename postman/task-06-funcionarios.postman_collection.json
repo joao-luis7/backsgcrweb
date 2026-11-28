@@ -9,6 +9,16 @@
       "key": "baseUrl",
       "value": "http://localhost:8080",
       "type": "string"
+    },
+    {
+      "key": "funcionarioId",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "usernameDinamico",
+      "value": "",
+      "type": "string"
     }
   ],
   "item": [
@@ -103,6 +113,15 @@
       "name": "3. Cadastrar Novo Funcionário (201)",
       "event": [
         {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.collectionVariables.set('usernameDinamico', `func.teste.${Date.now()}`);"
+            ]
+          }
+        },
+        {
           "listen": "test",
           "script": {
             "type": "text/javascript",
@@ -111,9 +130,10 @@
               "    pm.response.to.have.status(201);",
               "});",
               "const json = pm.response.json();",
+              "pm.collectionVariables.set('funcionarioId', json.id);",
               "pm.test('Retorna FuncionarioResponseDTO sem senha', function () {",
               "    pm.expect(json.id).to.be.a('number');",
-              "    pm.expect(json.username).to.eql('carlos.caixa');",
+              "    pm.expect(json.username).to.eql(pm.collectionVariables.get('usernameDinamico'));",
               "    pm.expect(json.perfil).to.eql('CAIXA');",
               "    pm.expect(json).to.not.have.property('senha');",
               "});"
@@ -131,7 +151,7 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"nome\": \"Carlos Caixa\",\n  \"username\": \"carlos.caixa\",\n  \"senha\": \"1234\",\n  \"perfil\": \"CAIXA\"\n}",
+          "raw": "{\n  \"nome\": \"Carlos Caixa\",\n  \"username\": \"{{usernameDinamico}}\",\n  \"senha\": \"1234\",\n  \"perfil\": \"CAIXA\"\n}",
           "options": {
             "raw": {
               "language": "json"
@@ -170,7 +190,7 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"nome\": \"Carlos Caixa 2\",\n  \"username\": \"carlos.caixa\",\n  \"senha\": \"1234\",\n  \"perfil\": \"CAIXA\"\n}",
+          "raw": "{\n  \"nome\": \"Carlos Caixa 2\",\n  \"username\": \"{{usernameDinamico}}\",\n  \"senha\": \"1234\",\n  \"perfil\": \"CAIXA\"\n}",
           "options": {
             "raw": {
               "language": "json"
@@ -220,6 +240,130 @@
           "raw": "{{baseUrl}}/funcionarios/save",
           "host": ["{{baseUrl}}"],
           "path": ["funcionarios", "save"]
+        }
+      }
+    },
+    {
+      "name": "5. Listar Todos os Funcionários (200)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status é 200 OK', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "const list = pm.response.json();",
+              "const expectedId = Number(pm.collectionVariables.get('funcionarioId'));",
+              "pm.test('Retorna array não vazio contendo funcionarioId e sem propriedade senha', function () {",
+              "    pm.expect(list).to.be.an('array').that.is.not.empty;",
+              "    pm.expect(list.some(f => f.id === expectedId)).to.eql(true);",
+              "    list.forEach(f => pm.expect(f).to.not.have.property('senha'));",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/funcionarios/findall",
+          "host": ["{{baseUrl}}"],
+          "path": ["funcionarios", "findall"]
+        }
+      }
+    },
+    {
+      "name": "6. Listar Funcionários Ativos (200)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status é 200 OK', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "const list = pm.response.json();",
+              "pm.test('Todos os funcionários retornados estão ativos e sem senha', function () {",
+              "    pm.expect(list).to.be.an('array');",
+              "    list.forEach(f => {",
+              "        pm.expect(f.ativo).to.eql(true);",
+              "        pm.expect(f).to.not.have.property('senha');",
+              "    });",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/funcionarios/ativos",
+          "host": ["{{baseUrl}}"],
+          "path": ["funcionarios", "ativos"]
+        }
+      }
+    },
+    {
+      "name": "7a. Buscar Funcionário por ID Existente (200)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status é 200 OK', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "const json = pm.response.json();",
+              "pm.test('Retorna funcionário esperado sem senha', function () {",
+              "    pm.expect(json.id).to.eql(Number(pm.collectionVariables.get('funcionarioId')));",
+              "    pm.expect(json.username).to.eql(pm.collectionVariables.get('usernameDinamico'));",
+              "    pm.expect(json).to.not.have.property('senha');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/funcionarios/findbyid/{{funcionarioId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["funcionarios", "findbyid", "{{funcionarioId}}"]
+        }
+      }
+    },
+    {
+      "name": "7b. Buscar Funcionário por ID Inexistente (404)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status é 404 Not Found', function () {",
+              "    pm.response.to.have.status(404);",
+              "});",
+              "pm.test('ErrorResponse com status 404', function () {",
+              "    pm.expect(pm.response.json().status).to.eql(404);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/funcionarios/findbyid/999999",
+          "host": ["{{baseUrl}}"],
+          "path": ["funcionarios", "findbyid", "999999"]
         }
       }
     }

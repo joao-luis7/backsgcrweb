@@ -6,11 +6,14 @@ import br.com.ifba.prg03projetosgcr.funcionario.dto.LoginRequestDTO;
 import br.com.ifba.prg03projetosgcr.funcionario.entity.Funcionario;
 import br.com.ifba.prg03projetosgcr.funcionario.service.FuncionarioService;
 import jakarta.validation.Valid;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -71,5 +74,50 @@ public class FuncionarioController {
 
         funcionarioService.save(funcionario);
         return ResponseEntity.status(HttpStatus.CREATED).body(FuncionarioResponseDTO.fromEntity(funcionario));
+    }
+
+    /**
+     * @author João Luis
+     * @apiNote Endpoint criado desde a versão 1.0.0
+     *
+     * Lista todos os funcionários cadastrados (ativos e inativos).
+     * @return 200 OK com a lista de dados públicos dos funcionários (sem senha).
+     */
+    @GetMapping(path = "/findall", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<List<FuncionarioResponseDTO>> findAll() {
+        log.debug("Requisição para listar todos os funcionários recebida no controller.");
+        return ResponseEntity.ok(toResponseList(funcionarioService.findAll()));
+    }
+
+    /**
+     * @author João Luis
+     * @apiNote Endpoint criado desde a versão 1.0.0
+     *
+     * Lista apenas os funcionários ativos no sistema.
+     * @return 200 OK com a lista de dados públicos dos funcionários ativos (sem senha).
+     */
+    @GetMapping(path = "/ativos", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<List<FuncionarioResponseDTO>> findAllAtivos() {
+        log.debug("Requisição para listar funcionários ativos recebida no controller.");
+        return ResponseEntity.ok(toResponseList(funcionarioService.findAllAtivos()));
+    }
+
+    /**
+     * @author João Luis
+     * @apiNote Endpoint criado desde a versão 1.0.0
+     *
+     * Busca um funcionário pelo seu identificador único.
+     * @param id identificador do funcionário
+     * @return 200 OK com os dados públicos do funcionário (sem senha), ou 404 Not Found se não existir.
+     */
+    @GetMapping(path = "/findbyid/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<FuncionarioResponseDTO> findById(@PathVariable("id") Long id) {
+        log.debug("Requisição para buscar funcionário pelo ID {} recebida no controller.", id);
+        Funcionario funcionario = funcionarioService.findById(id);
+        return ResponseEntity.ok(FuncionarioResponseDTO.fromEntity(funcionario));
+    }
+
+    private List<FuncionarioResponseDTO> toResponseList(List<Funcionario> funcionarios) {
+        return funcionarios.stream().map(FuncionarioResponseDTO::fromEntity).toList();
     }
 }

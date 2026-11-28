@@ -7,6 +7,7 @@ package br.com.ifba.prg03projetosgcr.funcionario.service;
 import br.com.ifba.prg03projetosgcr.funcionario.entity.Funcionario;
 import br.com.ifba.prg03projetosgcr.funcionario.entity.enums.PerfilAcesso;
 import br.com.ifba.prg03projetosgcr.funcionario.repository.FuncionarioRepository;
+import br.com.ifba.prg03projetosgcr.infrastructure.exception.RecursoNaoEncontradoException;
 import br.com.ifba.prg03projetosgcr.infrastructure.exception.RegraNegocioException;
 import br.com.ifba.prg03projetosgcr.util.ValidatorUtil;
 import jakarta.annotation.PostConstruct;
@@ -15,6 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Optional;
 /**
  *
@@ -98,6 +100,31 @@ public class FuncionarioServiceImpl implements FuncionarioService{
         funcionarioRepository.save(funcionario);
         
         log.info("Funcionário {} salvo com sucesso!", funcionario.getUsername());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Funcionario> findAll() {
+        log.debug("Listando todos os funcionários cadastrados.");
+        return funcionarioRepository.findAll();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Funcionario> findAllAtivos() {
+        log.debug("Listando todos os funcionários ativos.");
+        return funcionarioRepository.findByAtivoTrue();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Funcionario findById(Long id) {
+        log.debug("Buscando funcionário pelo ID: {}", id);
+        return funcionarioRepository.findById(id)
+                .orElseThrow(() -> {
+                    log.warn("Funcionário não encontrado para o ID: {}", id);
+                    return new RecursoNaoEncontradoException("Funcionário não encontrado para o ID: " + id);
+                });
     }
     
     private void validarFuncionario(Funcionario funcionario) {

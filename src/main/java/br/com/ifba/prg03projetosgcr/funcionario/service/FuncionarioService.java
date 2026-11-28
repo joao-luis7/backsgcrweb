@@ -5,6 +5,7 @@
 package br.com.ifba.prg03projetosgcr.funcionario.service;
 
 import br.com.ifba.prg03projetosgcr.funcionario.entity.Funcionario;
+import java.util.List;
 
 /**
  *
@@ -14,4 +15,10 @@ public interface FuncionarioService {
     Funcionario autenticar(String username, String senha);
 
     void save(Funcionario funcionario);
+
+    List<Funcionario> findAll();
+
+    List<Funcionario> findAllAtivos();
+
+    Funcionario findById(Long id);
 }
